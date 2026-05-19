@@ -1,0 +1,8 @@
+name = "asas-crm"
+main = "src/index.ts"
+compatibility_date = "2026-05-16"
+compatibility_flags = ["nodejs_compat"]
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "asas-crm-documents"
