@@ -7,8 +7,8 @@ compatibility_flags = ["nodejs_compat"]
 # These will be overridden by wrangler secret put
 DATABASE_URL = "postgresql://neondb_owner:npg_YRLDTh3z0gFx@ep-silent-violet-aqdwsns0.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require"
 JWT_SECRET = "2gxbZAixbC67Lx8NJMdMejSMepbWkUaVD3OtUUtvE13"
-#R2_PUBLIC_URL = "https://your-bucket.r2.dev"
+R2_PUBLIC_URL = "https://pub-9d19fc6accbf4ce4936fa9bd7ba03e7c.r2.dev"
 
-# [[r2_buckets]]
-# binding = "BUCKET"
-# bucket_name = "asas-crm-documents"
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "asas-crm-documents"

@@ -87,11 +87,44 @@ documentOperations.get('/:id/download', async (c) => {
 
     const doc = result.rows[0]
     
-    // If you have a custom domain for R2, you can return a public URL
-    const publicUrl = `${c.env.R2_PUBLIC_URL}/${doc.file_key}`
-    return c.json({ url: publicUrl, file_name: doc.file_name })
+    // Extract the token from the authorization header of this authenticated request
+    const authHeader = c.req.header('Authorization')
+    const token = authHeader ? authHeader.replace(/bearer\s+/i, '') : ''
+
+    // Dynamically build the download proxy URL using the server origin
+    // This allows downloads to work seamlessly in local development with mock R2
+    const origin = new URL(c.req.url).origin
+    const fileUrl = `${origin}/api/documents/${id}/file${token ? `?token=${encodeURIComponent(token)}` : ''}`
+    return c.json({ url: fileUrl, file_name: doc.file_name })
   } catch (error: any) {
     return c.json({ error: error.message }, 500)
+  }
+})
+
+documentOperations.get('/:id/file', async (c) => {
+  const db = getDb(c.env.DATABASE_URL)
+  const id = c.req.param('id')
+
+  try {
+    const result = await db.query('SELECT * FROM documents WHERE id = $1', [id])
+    if (result.rowCount === 0) return c.text('Not Found', 404)
+
+    const doc = result.rows[0]
+
+    if (c.env.BUCKET) {
+      const fileObj = await c.env.BUCKET.get(doc.file_key)
+      if (fileObj) {
+        c.header('Content-Type', fileObj.httpMetadata?.contentType || 'application/octet-stream')
+        c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(doc.file_name)}"`)
+        return c.body(fileObj.body)
+      }
+    }
+
+    // Fallback redirect if bucket is not loaded or file wasn't found in current bucket
+    const publicUrl = `${c.env.R2_PUBLIC_URL}/${doc.file_key}`
+    return c.redirect(publicUrl)
+  } catch (error: any) {
+    return c.text(error.message, 500)
   }
 })
 
