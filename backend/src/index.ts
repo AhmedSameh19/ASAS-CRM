@@ -17,7 +17,17 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-app.use('*', cors())
+app.use(
+  '*',
+  cors({
+    origin: ['https://asas-crm-two.vercel.app', 'http://localhost:3000'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
+    exposeHeaders: ['Content-Length'],
+    maxAge: 600,
+    credentials: true,
+  })
+)
 
 app.get('/', (c) => {
   return c.json({ message: 'ASAS CRM API is running' })

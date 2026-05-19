@@ -66,17 +66,10 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     }
   };
 
-  // Run initial fetch and set up real-time polling every 10 seconds
+  // Run initial fetch when filters or page change
   useEffect(() => {
     loadData();
     loadActivities(false, activitiesPage);
-
-    const interval = setInterval(() => {
-      loadData(true);
-      loadActivities(true, activitiesPage);
-    }, 10000); // 10-second real-time polling frequency
-
-    return () => clearInterval(interval);
   }, [dateRange, industry, activitiesPage]);
 
   const handleManualRefresh = () => {
@@ -263,10 +256,10 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-md mb-md">
         <div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight dark:text-white">Overview</h1>
-          <p className="font-body-md text-body-md text-on-surface-variant dark:text-gray-400 mt-1 flex items-center gap-2">
+          <p className="font-body-md text-body-md text-on-surface-variant dark:text-gray-400 mt-1 flex flex-wrap items-center gap-2">
             Real-time visual monitoring of your sales pipeline.
-            <span className="flex items-center gap-1.5 text-xs text-[#059669] bg-[#059669]/10 px-2 py-0.5 rounded-full font-semibold animate-pulse dark:bg-[#059669]/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#059669]"></span> Live Updates Active
+            <span className="flex items-center gap-1.5 text-xs text-[#00236f] bg-[#00236f]/10 dark:text-[#60a5fa] dark:bg-[#3b82f6]/10 px-2 py-0.5 rounded-full font-semibold">
+              Updated: {lastUpdated.toLocaleTimeString()}
             </span>
           </p>
         </div>
