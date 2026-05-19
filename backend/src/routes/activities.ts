@@ -15,17 +15,37 @@ activities.use('*', authMiddleware)
 activities.get('/', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   const user = c.get('jwtPayload') as any
+  const { page, limit } = c.req.query()
+  const pageNum = Math.max(1, Number(page) || 1)
+  const limitNum = Math.max(1, Number(limit) || 10)
+  const offset = (pageNum - 1) * limitNum
+
   try {
+    const countRes = await db.query(`
+      SELECT COUNT(*) as count 
+      FROM activities a
+      JOIN prospects p ON a.prospect_id = p.id
+    `)
+    const total = Number(countRes.rows[0]?.count || 0)
+
     const query = `
       SELECT a.*, p.company_name as prospect_company
       FROM activities a
       JOIN prospects p ON a.prospect_id = p.id
       WHERE 1 = 1
       ORDER BY a.activity_date DESC, a.created_at DESC
-      LIMIT 10
+      LIMIT $1 OFFSET $2
     `
-    const result = await db.query(query)
-    return c.json({ activities: result.rows })
+    const result = await db.query(query, [limitNum, offset])
+    return c.json({ 
+      activities: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    })
   } catch (error: any) {
     return c.json({ error: error.message }, 500)
   }

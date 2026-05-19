@@ -10,7 +10,7 @@ import {
 import {
   Users, CheckCircle2, TrendingUp, Percent, BarChart3,
   MoreHorizontal, Plus, Calendar, ArrowRight, UserPlus, FilePlus2, Sparkles, RefreshCw, ArrowDown,
-  Phone, Mail, MessageSquare, Video, FileText
+  Phone, Mail, MessageSquare, Video, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +22,9 @@ interface DashboardViewProps {
 export default function DashboardView({ onAddProspectClick, onNavigate }: DashboardViewProps) {
   const [data, setData] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const [activitiesTotalPages, setActivitiesTotalPages] = useState(1);
+  const [activitiesTotalCount, setActivitiesTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const { theme } = useTheme();
@@ -48,11 +51,13 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     }
   };
 
-  const loadActivities = async (silent = false) => {
+  const loadActivities = async (silent = false, page = activitiesPage) => {
     try {
       if (!silent) setActivitiesLoading(true);
-      const res = await api.get('/activities');
+      const res = await api.get(`/activities?page=${page}&limit=5`);
       setActivities(res.activities || []);
+      setActivitiesTotalPages(res.pagination?.totalPages || 1);
+      setActivitiesTotalCount(res.pagination?.total || 0);
     } catch (err: any) {
       console.error(err);
       if (!silent) toast.error('Failed to load recent activities');
@@ -64,19 +69,19 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
   // Run initial fetch and set up real-time polling every 10 seconds
   useEffect(() => {
     loadData();
-    loadActivities();
+    loadActivities(false, activitiesPage);
 
     const interval = setInterval(() => {
       loadData(true);
-      loadActivities(true);
+      loadActivities(true, activitiesPage);
     }, 10000); // 10-second real-time polling frequency
 
     return () => clearInterval(interval);
-  }, [dateRange, industry]);
+  }, [dateRange, industry, activitiesPage]);
 
   const handleManualRefresh = () => {
     loadData();
-    loadActivities();
+    loadActivities(false, activitiesPage);
     toast.success('Dashboard metrics refreshed');
   };
 
@@ -118,13 +123,30 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     };
   };
 
-  // Format activity date beautifully
   const formatActivityTime = (dateStr: string) => {
     if (!dateStr) return 'Recently';
-    const d = new Date(dateStr);
+
+    // 1. Sanitize the string to guarantee JavaScript interprets it as Cairo time (+03:00).
+    // This prevents Next.js SSR or Postgres JSON serialization from assuming UTC.
+    let safeDateStr = dateStr;
+    if (safeDateStr.endsWith('Z')) {
+      safeDateStr = safeDateStr.slice(0, -1); // Remove automatic UTC tag if added by API
+    }
+    if (!safeDateStr.includes('+')) {
+      // Add space handling just in case the DB sends '2026-05-19 14:00:00' instead of 'T'
+      safeDateStr = safeDateStr.replace(' ', 'T') + '+03:00';
+    }
+
+    const d = new Date(safeDateStr);
     const now = new Date();
+
+    // Calculate difference in milliseconds
     const diffMs = now.getTime() - d.getTime();
-    const diffMin = Math.floor(diffMs / 60000);
+
+    // Failsafe: If the server time slightly drifts and causes negative milliseconds, default to 0
+    const safeDiffMs = Math.max(0, diffMs);
+
+    const diffMin = Math.floor(safeDiffMs / 60000);
     const diffHrs = Math.floor(diffMin / 60);
     const diffDays = Math.floor(diffHrs / 24);
 
@@ -132,8 +154,15 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     if (diffMin < 60) return `${diffMin}m ago`;
     if (diffHrs < 24) return `${diffHrs}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    return d.toLocaleString('en-US', { timeZone: 'Africa/Cairo', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  };
+
+    return d.toLocaleString('en-US', {
+      timeZone: 'Africa/Cairo',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }; ``
 
   // Define pipeline stages sequentially for conversion rate monitoring
   const pipelineStages = [
@@ -608,7 +637,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
               Loading recent activities...
             </div>
           ) : activities.length > 0 ? (
-            activities.map((act) => {
+            [...activities].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((act) => {
               const meta = getActivityMeta(act.activity_type);
               const ActIcon = meta.icon;
               return (
@@ -626,7 +655,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
                       </p>
                     )}
                     <p className="font-label-sm text-label-sm text-outline dark:text-gray-500 mt-1">
-                      {formatActivityTime(act.activity_date)}
+                      {formatActivityTime(act.created_at)}
                     </p>
                   </div>
                 </div>
@@ -644,6 +673,33 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
             </div>
           )}
         </div>
+
+        {/* Pagination controls */}
+        {activities.length > 0 && activitiesTotalPages > 1 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 mt-4 border-t border-surface-container-highest dark:border-[#1e293b]">
+            <p className="text-xs text-outline dark:text-gray-400 font-medium">
+              Showing page <span className="font-semibold text-on-surface dark:text-white">{activitiesPage}</span> of <span className="font-semibold text-on-surface dark:text-white">{activitiesTotalPages}</span> ({activitiesTotalCount} total activities)
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={activitiesPage <= 1}
+                onClick={() => setActivitiesPage(p => Math.max(1, p - 1))}
+                className="p-1.5 rounded-lg border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-on-surface-variant dark:text-gray-300 transition-colors"
+                title="Previous Page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                disabled={activitiesPage >= activitiesTotalPages}
+                onClick={() => setActivitiesPage(p => Math.min(activitiesTotalPages, p + 1))}
+                className="p-1.5 rounded-lg border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed text-on-surface-variant dark:text-gray-300 transition-colors"
+                title="Next Page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
