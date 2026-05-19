@@ -23,6 +23,28 @@ app.get('/', (c) => {
   return c.json({ message: 'ASAS CRM API is running' })
 })
 
+app.get('/health', async (c) => {
+  const db = getDb(c.env.DATABASE_URL)
+  const startTime = Date.now()
+  try {
+    await db.query('SELECT 1')
+    const latency = Date.now() - startTime
+    return c.json({
+      status: 'healthy',
+      database: 'connected',
+      latency: `${latency}ms`,
+      timestamp: new Date().toISOString()
+    }, 200)
+  } catch (error: any) {
+    return c.json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
 // Mount routes
 app.route('/api/auth', auth)
 app.route('/api/prospects', prospects)
