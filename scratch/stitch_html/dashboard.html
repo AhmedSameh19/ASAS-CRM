@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asas CRM Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#341100",
+                        "on-surface-variant": "#444651",
+                        "on-error": "#ffffff",
+                        "outline": "#757682",
+                        "surface-container-highest": "#dce2f7",
+                        "inverse-surface": "#293040",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "inverse-primary": "#b6c4ff",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "on-background": "#141b2b",
+                        "primary-container": "#1e3a8a",
+                        "on-primary-container": "#90a8ff",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#00236f",
+                        "on-tertiary-fixed-variant": "#773205",
+                        "surface-tint": "#4059aa",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#f39461",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#fea619",
+                        "tertiary-fixed": "#ffdbcb",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "tertiary-container": "#6e2c00",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "outline-variant": "#c5c5d3",
+                        "surface-dim": "#d3daef",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container-low": "#f1f3ff",
+                        "surface": "#f9f9ff",
+                        "surface-variant": "#dce2f7",
+                        "on-surface": "#141b2b",
+                        "on-secondary-fixed": "#2a1700",
+                        "background": "#f9f9ff",
+                        "error-container": "#ffdad6",
+                        "surface-bright": "#f9f9ff",
+                        "surface-container": "#e9edff",
+                        "inverse-on-surface": "#edf0ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#dce1ff",
+                        "on-secondary-container": "#684000",
+                        "on-primary-fixed-variant": "#264191",
+                        "secondary": "#855300",
+                        "secondary-fixed": "#ffddb8",
+                        "tertiary": "#4b1c00",
+                        "on-primary-fixed": "#00164e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xs": "4px",
+                        "margin-desktop": "32px",
+                        "margin-mobile": "16px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "lg": "24px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter", "sans-serif"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "label-md": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["30px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased h-screen flex overflow-hidden">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full w-[240px] z-40 bg-surface-container-lowest border-r border-outline-variant flex flex-col h-full py-md">
+<div class="px-lg mb-8">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Asas CRM</h1>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Management Suite</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<a class="flex items-center w-full px-4 py-3 text-primary font-semibold border-l-2 border-primary bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center w-full px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">group</span>
+<span class="font-body-md text-body-md">Prospects</span>
+</a>
+<a class="flex items-center w-full px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">account_tree</span>
+<span class="font-body-md text-body-md">Pipeline</span>
+</a>
+<a class="flex items-center w-full px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-2 rounded-DEFAULT font-label-md text-label-md hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Entry
+            </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 ml-[240px] flex flex-col h-full overflow-hidden">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 right-0 w-[calc(100%-240px)] z-30 bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center h-16 px-margin-desktop w-full">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined">search</span>
+<input class="border-none bg-transparent focus:ring-0 font-body-md text-body-md placeholder:text-outline p-0 w-64" placeholder="Search..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-primary font-label-md text-label-md font-bold px-4 py-2 hover:bg-surface-container-high rounded-lg transition-all focus:ring-2 focus:ring-primary">
+                    Add New
+                </button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant">
+<img alt="Founder 1" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate executive, well-lit with soft studio lighting against a neutral background. The subject exudes confidence and modern professionalism, fitting a sleek CRM interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEGY4KmT6Adn4xQzaSD1ZhdFH2AvF2BbOe3Gyoj-btufwlQZW-vyBHJbRJaftk6p6-jLik2rTMjwDKZO700Bo_uEFSPuH5LtmvO6QcOEUDPZLGdDwjCb8eiSGjPcQPBdVxS7iuoG6n5PGPzT4tQKMbwOjjt9q6QrVntCQRr4Zq27YPzm0tTxwZLIwVOf6M0fSeSy4qCYwk3gXZshyBGnTzTaT0ULcsGuGpy-I4p6607r4x3AaYijSaPjlZEFxaLyy7wvK5E0kXbY8"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<main class="mt-16 flex-1 overflow-y-auto p-lg bg-surface">
+<div class="max-w-[1400px] mx-auto flex flex-col gap-lg">
+<!-- Page Title -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Overview</h2>
+</div>
+<!-- Top Row: Metric Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col justify-between hover:shadow-sm transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Prospects</span>
+<span class="material-symbols-outlined text-outline text-[20px]">group</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="font-display-lg text-display-lg text-on-surface">1,284</span>
+<span class="font-label-sm text-label-sm text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">trending_up</span> +12%
+                            </span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col justify-between hover:shadow-sm transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Active Prospects</span>
+<span class="material-symbols-outlined text-outline text-[20px]">how_to_reg</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="font-display-lg text-display-lg text-on-surface">456</span>
+<span class="font-label-sm text-label-sm text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">trending_up</span> +5%
+                            </span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col justify-between hover:shadow-sm transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">MR Completed</span>
+<span class="material-symbols-outlined text-outline text-[20px]">task_alt</span>
+</div>
+<div class="flex items-end justify-between w-full">
+<span class="font-display-lg text-display-lg text-on-surface">89</span>
+<!-- Pure CSS Sparkline Mockup -->
+<div class="flex items-end h-8 gap-[2px] mb-2">
+<div class="w-1.5 h-[30%] bg-surface-tint rounded-t-sm opacity-50"></div>
+<div class="w-1.5 h-[50%] bg-surface-tint rounded-t-sm opacity-60"></div>
+<div class="w-1.5 h-[40%] bg-surface-tint rounded-t-sm opacity-70"></div>
+<div class="w-1.5 h-[70%] bg-surface-tint rounded-t-sm opacity-80"></div>
+<div class="w-1.5 h-[60%] bg-surface-tint rounded-t-sm opacity-90"></div>
+<div class="w-1.5 h-[90%] bg-primary rounded-t-sm"></div>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col justify-between hover:shadow-sm transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Conversion Rate</span>
+<span class="material-symbols-outlined text-outline text-[20px]">percent</span>
+</div>
+<div>
+<span class="font-display-lg text-display-lg text-on-surface block mb-2">24.5%</span>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 24.5%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Middle Row: Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-md">
+<!-- Left Card: Pipeline Funnel (2/3) -->
+<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-lg p-lg">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">Pipeline Funnel</h3>
+<button class="material-symbols-outlined text-outline-variant hover:text-on-surface transition-colors">more_horiz</button>
+</div>
+<!-- Pure HTML/CSS Bar Chart Mockup -->
+<div class="flex h-64 items-end gap-4 mt-8 px-4 border-b border-outline-variant pb-2 relative">
+<!-- Background Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
+<div class="border-t border-surface-container-high w-full h-0"></div>
+<div class="border-t border-surface-container-high w-full h-0"></div>
+<div class="border-t border-surface-container-high w-full h-0"></div>
+<div class="border-t border-surface-container-high w-full h-0"></div>
+<div class="border-t border-surface-container-high w-full h-0"></div>
+</div>
+<!-- Bars (relative sizes based on data) -->
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group">
+<div class="w-full bg-primary-container rounded-t-md hover:bg-primary transition-colors cursor-pointer" style="height: 100%;"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-full text-center">New Lead</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group">
+<div class="w-full bg-primary-container rounded-t-md hover:bg-primary transition-colors cursor-pointer" style="height: 80%;"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-full text-center">MR Sched.</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group">
+<div class="w-full bg-primary-container rounded-t-md hover:bg-primary transition-colors cursor-pointer" style="height: 60%;"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-full text-center">MR Comp.</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group">
+<div class="w-full bg-primary-container rounded-t-md hover:bg-primary transition-colors cursor-pointer" style="height: 40%;"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-full text-center">Demo Done</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group">
+<div class="w-full bg-primary-container rounded-t-md hover:bg-primary transition-colors cursor-pointer" style="height: 20%;"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-full text-center">Proposal</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group">
+<div class="w-full bg-secondary-container rounded-t-md hover:bg-secondary transition-colors cursor-pointer" style="height: 15%;"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-full text-center">Won</span>
+</div>
+</div>
+</div>
+<!-- Right Card: Industry Pie Chart (1/3) -->
+<div class="lg:col-span-1 bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">Prospects by Industry</h3>
+<button class="material-symbols-outlined text-outline-variant hover:text-on-surface transition-colors">more_horiz</button>
+</div>
+<!-- CSS Conic Gradient Pie Chart Mockup -->
+<div class="flex-1 flex items-center justify-center py-4">
+<div class="w-48 h-48 rounded-full border-4 border-surface-container-lowest shadow-sm" style="background: conic-gradient(
+                                #00236f 0% 45%, 
+                                #1e3a8a 45% 75%, 
+                                #4059aa 75% 90%, 
+                                #b6c4ff 90% 100%
+                            );"></div>
+</div>
+<div class="mt-auto grid grid-cols-2 gap-y-3 pt-4 border-t border-outline-variant">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">Tech (45%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary-container"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">Healthcare (30%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-surface-tint"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">Finance (15%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-inverse-primary"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">Retail (10%)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Row: Recent Activities -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">Recent Activities</h3>
+<button class="font-label-md text-label-md text-primary hover:underline">View All</button>
+</div>
+<div class="flex flex-col">
+<!-- Activity Item -->
+<div class="flex items-start gap-4 py-3 border-b border-surface-container-highest last:border-0 last:pb-0">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shrink-0 mt-1">
+<span class="material-symbols-outlined text-[16px]">add_circle</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface">
+<span class="font-semibold text-primary">Founder 1</span> added <span class="font-semibold">TechCorp</span> to Pipeline.
+                                </p>
+<p class="font-label-sm text-label-sm text-outline mt-1">2 hours ago</p>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="flex items-start gap-4 py-3 border-b border-surface-container-highest last:border-0 last:pb-0">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant shrink-0 mt-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface">
+                                    Demo completed with <span class="font-semibold">HealthLink</span>.
+                                </p>
+<p class="font-label-sm text-label-sm text-outline mt-1">5 hours ago</p>
+</div>
+</div>
+<!-- Activity Item -->
+<div class="flex items-start gap-4 py-3 border-b border-surface-container-highest last:border-0 last:pb-0">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0 mt-1">
+<span class="material-symbols-outlined text-[16px]">person_add</span>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md text-on-surface">
+                                    New lead generated: <span class="font-semibold">RetailFlow</span>.
+                                </p>
+<p class="font-label-sm text-label-sm text-outline mt-1">Yesterday at 4:30 PM</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

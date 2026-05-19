@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asas CRM - Pipeline Kanban Board</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#341100",
+                      "on-surface-variant": "#444651",
+                      "on-error": "#ffffff",
+                      "outline": "#757682",
+                      "surface-container-highest": "#dce2f7",
+                      "inverse-surface": "#293040",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "inverse-primary": "#b6c4ff",
+                      "error": "#ba1a1a",
+                      "on-error-container": "#93000a",
+                      "on-background": "#141b2b",
+                      "primary-container": "#1e3a8a",
+                      "on-primary-container": "#90a8ff",
+                      "on-tertiary": "#ffffff",
+                      "primary": "#00236f",
+                      "on-tertiary-fixed-variant": "#773205",
+                      "surface-tint": "#4059aa",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-container": "#f39461",
+                      "on-primary": "#ffffff",
+                      "secondary-container": "#fea619",
+                      "tertiary-fixed": "#ffdbcb",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "tertiary-container": "#6e2c00",
+                      "primary-fixed-dim": "#b6c4ff",
+                      "outline-variant": "#c5c5d3",
+                      "surface-dim": "#d3daef",
+                      "tertiary-fixed-dim": "#ffb691",
+                      "surface-container-high": "#e1e8fd",
+                      "surface-container-low": "#f1f3ff",
+                      "surface": "#f9f9ff",
+                      "surface-variant": "#dce2f7",
+                      "on-surface": "#141b2b",
+                      "on-secondary-fixed": "#2a1700",
+                      "background": "#f9f9ff",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f9f9ff",
+                      "surface-container": "#e9edff",
+                      "inverse-on-surface": "#edf0ff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#dce1ff",
+                      "on-secondary-container": "#684000",
+                      "on-primary-fixed-variant": "#264191",
+                      "secondary": "#855300",
+                      "secondary-fixed": "#ffddb8",
+                      "tertiary": "#4b1c00",
+                      "on-primary-fixed": "#00164e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "xs": "4px",
+                      "margin-desktop": "32px",
+                      "margin-mobile": "16px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "gutter": "20px",
+                      "lg": "24px",
+                      "xl": "32px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "30px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[240px] z-40 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flex flex-col h-full py-md hidden md:flex">
+<div class="px-lg mb-8">
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary">Asas CRM</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Management Suite</p>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<a class="flex items-center w-full px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors duration-200 gap-3" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center w-full px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors duration-200 gap-3" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-md text-body-md">Prospects</span>
+</a>
+<a class="flex items-center w-full px-4 py-3 text-primary dark:text-inverse-primary font-semibold border-l-2 border-primary bg-surface-container-low dark:bg-surface-variant hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors duration-200 gap-3" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-body-md text-body-md">Pipeline</span>
+</a>
+<a class="flex items-center w-full px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors duration-200 gap-3" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full bg-primary text-on-primary py-2 rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity">New Entry</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-[240px] flex flex-col h-full overflow-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-240px)] z-30 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline flex justify-between items-center h-16 px-margin-desktop w-full">
+<div class="flex items-center w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface rounded-lg border border-outline-variant focus:ring-2 focus:ring-primary focus:border-transparent font-body-md text-body-md text-on-background placeholder:text-on-surface-variant" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-sm">add</span>
+                    Add New
+                </button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant">
+<img alt="Founder 1" class="w-full h-full object-cover" data-alt="A professional headshot of a mature male executive with silver hair, wearing a tailored navy suit and light blue shirt. He has a confident, approachable expression. The background is a slightly blurred, modern office setting with ample natural light, adhering to a clean, corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOVSg__fYbt1FODpJbPff_orWP3tI-khJH9--6FVBTxLuQ1nTY5xm46_VpWMoqt4y8jOpBr2_bwsOvSckvgYvI8iJHMULn4VTv4hnC06thVSumTUZNhv52-XCMqrZHrp6Afp2T7K_FhPrtXcJQO6dNpoEQvOi69ZCC4lHlD3AiI0B5vTg19v5Cm9SKAKnDXbMdmDOb2c1JnHDcbLH7nyCdVexE3_IuP7XP_TiLF7fHlGEoP_oZEwaIfm95MNNh4jBKOJSVWAgHwt0"/>
+</div>
+</div>
+</header>
+<!-- Kanban Board Container -->
+<main class="flex-1 mt-16 p-lg overflow-x-auto overflow-y-hidden bg-background">
+<div class="flex gap-lg h-full min-w-max pb-4">
+<!-- Column: New Lead -->
+<div class="flex flex-col w-[300px] h-full">
+<div class="flex items-center justify-between mb-4 px-2">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">New Lead</h2>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">2</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-sm pr-2 custom-scrollbar">
+<!-- Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 hover:border-primary transition-colors cursor-grab relative group">
+<span class="material-symbols-outlined absolute top-4 right-2 text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+<h3 class="font-body-md text-body-md font-semibold text-on-background mb-1">TechFlow Solutions</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Sarah Jenkins</p>
+<div class="flex items-center justify-between mt-4">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">SaaS</span>
+<span class="font-label-md text-label-md text-primary font-semibold">45,000 EGP</span>
+</div>
+</div>
+<!-- Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 hover:border-primary transition-colors cursor-grab relative group">
+<span class="material-symbols-outlined absolute top-4 right-2 text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+<h3 class="font-body-md text-body-md font-semibold text-on-background mb-1">Urban Builders Ltd</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Omar Tariq</p>
+<div class="flex items-center justify-between mt-4">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">Construction</span>
+<span class="font-label-md text-label-md text-primary font-semibold">120,000 EGP</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: MR Scheduled -->
+<div class="flex flex-col w-[300px] h-full">
+<div class="flex items-center justify-between mb-4 px-2">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">MR Scheduled</h2>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">1</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-sm pr-2 custom-scrollbar">
+<!-- Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 hover:border-primary transition-colors cursor-grab relative group">
+<span class="material-symbols-outlined absolute top-4 right-2 text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+<h3 class="font-body-md text-body-md font-semibold text-on-background mb-1">Apex Retail</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Layla Hassan</p>
+<div class="flex items-center justify-between mt-4">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">Retail</span>
+<span class="font-label-md text-label-md text-primary font-semibold">85,000 EGP</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Demo Done -->
+<div class="flex flex-col w-[300px] h-full">
+<div class="flex items-center justify-between mb-4 px-2">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary-container"></div>
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Demo Done</h2>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">2</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-sm pr-2 custom-scrollbar">
+<!-- Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 hover:border-primary transition-colors cursor-grab relative group">
+<span class="material-symbols-outlined absolute top-4 right-2 text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+<h3 class="font-body-md text-body-md font-semibold text-on-background mb-1">Global Logistics</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Karim Ahmed</p>
+<div class="flex items-center justify-between mt-4">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">Logistics</span>
+<span class="font-label-md text-label-md text-primary font-semibold">210,000 EGP</span>
+</div>
+</div>
+<!-- Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 hover:border-primary transition-colors cursor-grab relative group">
+<span class="material-symbols-outlined absolute top-4 right-2 text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+<h3 class="font-body-md text-body-md font-semibold text-on-background mb-1">FinServe Inc</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Nadia Ali</p>
+<div class="flex items-center justify-between mt-4">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">Finance</span>
+<span class="font-label-md text-label-md text-primary font-semibold">350,000 EGP</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Won -->
+<div class="flex flex-col w-[300px] h-full">
+<div class="flex items-center justify-between mb-4 px-2">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#10b981]"></div>
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Won</h2>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">1</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-sm pr-2 custom-scrollbar">
+<!-- Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 hover:border-primary transition-colors cursor-grab relative group border-l-4 border-l-[#10b981]">
+<span class="material-symbols-outlined absolute top-4 right-2 text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+<h3 class="font-body-md text-body-md font-semibold text-on-background mb-1">MedCare Group</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Dr. Youssef</p>
+<div class="flex items-center justify-between mt-4">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded font-label-sm text-label-sm">Healthcare</span>
+<span class="font-label-md text-label-md text-primary font-semibold">500,000 EGP</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<style>
+        /* Minimal custom scrollbar for kanban columns */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c5c5d3; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #757682; 
+        }
+    </style>
+</body></html>
