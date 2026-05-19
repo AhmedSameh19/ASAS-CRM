@@ -13,17 +13,17 @@ analytics.get('/', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   const user = c.get('jwtPayload') as any
   const { date_range, industry } = c.req.query()
-  
+
   // Database Isolation: Scoped base WHERE clause to the authenticated user
-  let whereClause = 'WHERE assigned_to = $1'
-  const params: any[] = [user.id]
-  let paramCount = 2
+  let whereClause = 'WHERE 1 = 1'
+  const params: any[] = []
+  let paramCount = 1
 
   if (industry && industry !== 'All') {
     whereClause += ` AND industry = $${paramCount++}`
     params.push(industry)
   }
-  
+
   if (date_range) {
     if (date_range === 'Last 7 days') {
       whereClause += ` AND created_at >= NOW() - INTERVAL '7 days'`

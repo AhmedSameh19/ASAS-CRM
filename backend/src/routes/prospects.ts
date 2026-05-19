@@ -15,7 +15,7 @@ prospects.get('/', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   const user = c.get('jwtPayload') as any
   const { status, industry, search, sort = 'created_at', order = 'desc' } = c.req.query()
-  
+
   const page = Math.max(1, parseInt(c.req.query('page') || '1'))
   const limit = Math.max(1, parseInt(c.req.query('limit') || '10'))
   const offset = (page - 1) * limit
@@ -72,8 +72,8 @@ prospects.get('/', async (c) => {
     const total = countRes.rows[0].count || 0
 
     const result = await db.query(query, params)
-    return c.json({ 
-      prospects: result.rows, 
+    return c.json({
+      prospects: result.rows,
       total,
       page,
       limit
@@ -88,12 +88,12 @@ prospects.get('/:id', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
-  
+
   try {
     // Database Isolation: Only allow fetching prospects assigned to the logged-in user
     const prospectRes = await db.query('SELECT * FROM prospects WHERE id = $1 AND assigned_to = $2', [id, user.id])
     if (prospectRes.rowCount === 0) return c.json({ error: 'Not found or unauthorized' }, 404)
-    
+
     const activitiesRes = await db.query('SELECT * FROM activities WHERE prospect_id = $1 ORDER BY activity_date DESC', [id])
     const documentsRes = await db.query('SELECT * FROM documents WHERE prospect_id = $1 ORDER BY uploaded_at DESC', [id])
 
@@ -113,7 +113,7 @@ prospects.post('/', async (c) => {
   const user = c.get('jwtPayload') as any
   const body = await c.req.json()
   const { company_name, contact_person, phone, email, industry, company_size, source, status, estimated_value, expected_close_date, priority, notes } = body
-  
+
   try {
     // Database Isolation: Automatically assign new prospects to the authenticated user
     const query = `
@@ -140,7 +140,7 @@ prospects.put('/:id', async (c) => {
   const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
   const body = await c.req.json()
-  
+
   try {
     // Database Isolation: Verify prospect ownership before modification
     const checkRes = await db.query('SELECT * FROM prospects WHERE id = $1 AND assigned_to = $2', [id, user.id])
@@ -149,7 +149,7 @@ prospects.put('/:id', async (c) => {
     // Build dynamic SET clause for partial updates
     const setKeys = Object.keys(body).filter(k => k !== 'id' && k !== 'created_at' && k !== 'updated_at' && k !== 'assigned_to')
     if (setKeys.length === 0) return c.json({ error: 'No fields to update' }, 400)
-    
+
     let setClause = setKeys.map((k, i) => `${k} = $${i + 2}`).join(', ')
     const values = [id, ...setKeys.map(k => body[k])]
 
@@ -168,7 +168,7 @@ prospects.delete('/:id', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
-  
+
   try {
     // Database Isolation: Verify prospect ownership before deletion
     const result = await db.query('DELETE FROM prospects WHERE id = $1 AND assigned_to = $2 RETURNING *', [id, user.id])

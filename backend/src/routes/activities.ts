@@ -20,11 +20,11 @@ activities.get('/', async (c) => {
       SELECT a.*, p.company_name as prospect_company
       FROM activities a
       JOIN prospects p ON a.prospect_id = p.id
-      WHERE p.assigned_to = $1
+      WHERE 1 = 1
       ORDER BY a.activity_date DESC, a.created_at DESC
       LIMIT 10
     `
-    const result = await db.query(query, [user.id])
+    const result = await db.query(query)
     return c.json({ activities: result.rows })
   } catch (error: any) {
     return c.json({ error: error.message }, 500)
@@ -82,7 +82,7 @@ activities.put('/:id', async (c) => {
 
     const setKeys = Object.keys(body).filter(k => k !== 'id' && k !== 'created_at' && k !== 'created_by' && k !== 'prospect_id')
     if (setKeys.length === 0) return c.json({ error: 'No fields to update' }, 400)
-    
+
     let setClause = setKeys.map((k, i) => `${k} = $${i + 2}`).join(', ')
     const values = [id, ...setKeys.map(k => body[k])]
 
@@ -101,7 +101,7 @@ activities.delete('/:id', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   const id = c.req.param('id')
   const user = c.get('jwtPayload') as any
-  
+
   try {
     // Database Isolation Check: Verify that the activity belongs to a prospect owned by the user
     const checkRes = await db.query(

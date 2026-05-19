@@ -17,15 +17,15 @@ type SortDir = 'asc' | 'desc';
 
 // Unified Mappings for Premium Visual Tags
 const STATUS_COLORS: Record<string, string> = {
-  'New Lead':       'bg-[#757682]/10 text-[#757682] dark:bg-gray-800 dark:text-gray-300',
-  'MR Scheduled':   'bg-[#00236f]/10 text-[#00236f] dark:bg-blue-900/30 dark:text-blue-400',
-  'MR Completed':   'bg-[#4059aa]/10 text-[#4059aa] dark:bg-indigo-900/30 dark:text-indigo-400',
+  'New Lead': 'bg-[#757682]/10 text-[#757682] dark:bg-gray-800 dark:text-gray-300',
+  'MR Scheduled': 'bg-[#00236f]/10 text-[#00236f] dark:bg-blue-900/30 dark:text-blue-400',
+  'MR Completed': 'bg-[#4059aa]/10 text-[#4059aa] dark:bg-indigo-900/30 dark:text-indigo-400',
   'Demo Scheduled': 'bg-[#855300]/10 text-[#855300] dark:bg-amber-900/30 dark:text-amber-400',
-  'Demo Done':      'bg-[#fea619]/10 text-[#684000] dark:bg-orange-900/30 dark:text-orange-400',
-  'Proposal Sent':  'bg-[#6e2c00]/10 text-[#6e2c00] dark:bg-purple-900/30 dark:text-purple-400',
-  'Negotiation':    'bg-[#1e3a8a]/10 text-[#1e3a8a] dark:bg-[#1e3a8a]/30 dark:text-[#3b82f6]',
-  'Won':            'bg-[#059669]/10 text-[#059669] dark:bg-green-900/30 dark:text-green-400',
-  'Lost':           'bg-[#ba1a1a]/10 text-[#ba1a1a] dark:bg-red-900/30 dark:text-red-400',
+  'Demo Done': 'bg-[#fea619]/10 text-[#684000] dark:bg-orange-900/30 dark:text-orange-400',
+  'Proposal Sent': 'bg-[#6e2c00]/10 text-[#6e2c00] dark:bg-purple-900/30 dark:text-purple-400',
+  'Negotiation': 'bg-[#1e3a8a]/10 text-[#1e3a8a] dark:bg-[#1e3a8a]/30 dark:text-[#3b82f6]',
+  'Won': 'bg-[#059669]/10 text-[#059669] dark:bg-green-900/30 dark:text-green-400',
+  'Lost': 'bg-[#ba1a1a]/10 text-[#ba1a1a] dark:bg-red-900/30 dark:text-red-400',
 };
 
 export default function ProspectListView() {
@@ -211,25 +211,25 @@ export default function ProspectListView() {
               <form onSubmit={handleAddSubmit} className="space-y-md pt-4">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Company Name</label>
-                  <Input placeholder="TechCorp Ltd" required value={newProspect.company_name} onChange={e => setNewProspect({...newProspect, company_name: e.target.value})} className="dark:bg-[#1e293b] dark:border-[#334155]" />
+                  <Input placeholder="TechCorp Ltd" required value={newProspect.company_name} onChange={e => setNewProspect({ ...newProspect, company_name: e.target.value })} className="dark:bg-[#1e293b] dark:border-[#334155]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Contact Person</label>
-                  <Input placeholder="Ahmed Sakr" required value={newProspect.contact_person} onChange={e => setNewProspect({...newProspect, contact_person: e.target.value})} className="dark:bg-[#1e293b] dark:border-[#334155]" />
+                  <Input placeholder="Ahmed Sakr" required value={newProspect.contact_person} onChange={e => setNewProspect({ ...newProspect, contact_person: e.target.value })} className="dark:bg-[#1e293b] dark:border-[#334155]" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Email Address</label>
-                    <Input placeholder="name@company.com" type="email" value={newProspect.email} onChange={e => setNewProspect({...newProspect, email: e.target.value})} className="dark:bg-[#1e293b] dark:border-[#334155]" />
+                    <Input placeholder="name@company.com" type="email" value={newProspect.email} onChange={e => setNewProspect({ ...newProspect, email: e.target.value })} className="dark:bg-[#1e293b] dark:border-[#334155]" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Phone Number</label>
-                    <Input placeholder="+20 100 ..." value={newProspect.phone} onChange={e => setNewProspect({...newProspect, phone: e.target.value})} className="dark:bg-[#1e293b] dark:border-[#334155]" />
+                    <Input placeholder="+20 100 ..." value={newProspect.phone} onChange={e => setNewProspect({ ...newProspect, phone: e.target.value })} className="dark:bg-[#1e293b] dark:border-[#334155]" />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Industry Sector</label>
-                  <Select value={newProspect.industry} onValueChange={v => setNewProspect({...newProspect, industry: v || ''})}>
+                  <Select value={newProspect.industry} onValueChange={v => setNewProspect({ ...newProspect, industry: v || '' })}>
                     <SelectTrigger className="dark:bg-[#1e293b] dark:border-[#334155]"><SelectValue placeholder="Select Industry" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="F&B">F&B</SelectItem>
@@ -241,7 +241,7 @@ export default function ProspectListView() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Lead Source</label>
-                  <Select value={newProspect.source} onValueChange={v => setNewProspect({...newProspect, source: v || ''})}>
+                  <Select value={newProspect.source} onValueChange={v => setNewProspect({ ...newProspect, source: v || '' })}>
                     <SelectTrigger className="dark:bg-[#1e293b] dark:border-[#334155]"><SelectValue placeholder="Select Lead Source" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="LinkedIn">LinkedIn</SelectItem>
@@ -265,12 +265,12 @@ export default function ProspectListView() {
           <label className="text-[11px] font-bold text-outline dark:text-gray-400 uppercase tracking-wider">Search Leads</label>
           <div className="relative w-full">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-outline" />
-            <input 
+            <input
               type="text"
-              placeholder="Search company, contact person, email..." 
+              placeholder="Search company, contact person, email..."
               className="pl-9 pr-4 py-2 w-full bg-surface-container-low dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md text-on-surface dark:text-gray-200 transition-all placeholder:text-outline"
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
@@ -400,18 +400,18 @@ export default function ProspectListView() {
                       </TableCell>
                       <TableCell className="text-right py-3.5" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-end gap-1.5">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-primary dark:text-[#3b82f6] hover:bg-surface-container" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-primary dark:text-[#3b82f6] hover:bg-surface-container"
                             onClick={() => router.push(`/prospects/${p.id}`)}
                           >
                             <Eye className="h-4 w-4 mr-1" /> View
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
                             onClick={(e) => handleDelete(p.id, e)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -459,7 +459,7 @@ export default function ProspectListView() {
                 >
                   <ArrowLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                 </button>
-                
+
                 {/* Page Numbers */}
                 {Array.from({ length: Math.ceil(total / limit) }, (_, idx) => idx + 1)
                   .filter((p) => p === 1 || p === Math.ceil(total / limit) || Math.abs(p - page) <= 1)
@@ -470,11 +470,10 @@ export default function ProspectListView() {
                         {showEllipsis && <span className="px-1 text-gray-400">...</span>}
                         <button
                           onClick={() => setPage(p)}
-                          className={`h-7 w-7 text-xs font-semibold rounded flex items-center justify-center transition-colors ${
-                            page === p
+                          className={`h-7 w-7 text-xs font-semibold rounded flex items-center justify-center transition-colors ${page === p
                               ? 'bg-[#00236f] text-white dark:bg-[#3b82f6]'
                               : 'border border-outline-variant/30 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e293b] text-gray-700 dark:text-gray-400'
-                          }`}
+                            }`}
                         >
                           {p}
                         </button>

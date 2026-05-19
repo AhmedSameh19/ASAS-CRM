@@ -10,9 +10,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { exportToCSV, activitiesToCSV } from '@/lib/export';
-import { 
-  ArrowLeft, User, Mail, Phone, Building2, Loader2, Trash, 
-  Upload, Download, Plus, Clock, FileText, Calendar, DollarSign, 
+import {
+  ArrowLeft, User, Mail, Phone, Building2, Loader2, Trash,
+  Upload, Download, Plus, Clock, FileText, Calendar, DollarSign,
   ShieldCheck, Sparkles, MessageSquare, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -23,7 +23,7 @@ interface ProspectDetailViewProps {
 
 export default function ProspectDetailView({ prospectId }: ProspectDetailViewProps) {
   const router = useRouter();
-  
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'timeline' | 'documents'>('details');
@@ -216,7 +216,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
       {/* Detail Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-md mb-md">
         <div className="flex items-center gap-md min-w-0">
-          <button 
+          <button
             onClick={() => router.push('/prospects')}
             className="p-2 bg-surface-container-lowest dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-[#1e293b] rounded-lg transition-colors"
           >
@@ -242,10 +242,10 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
             </SelectContent>
           </Select>
 
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/30 border border-red-100 dark:border-red-950/50 p-2.5 rounded-lg" 
+          <Button
+            variant="destructive"
+            size="sm"
+            className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/30 border border-red-100 dark:border-red-950/50 p-2.5 rounded-lg"
             onClick={handleDelete}
             title="Delete prospect"
           >
@@ -258,31 +258,28 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
       <div className="flex lg:hidden border-b border-outline-variant dark:border-gray-800 mb-4 select-none">
         <button
           onClick={() => setActiveTab('details')}
-          className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition-colors ${
-            activeTab === 'details'
+          className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition-colors ${activeTab === 'details'
               ? 'border-[#00236f] text-[#00236f] dark:border-[#3b82f6] dark:text-[#3b82f6]'
               : 'border-transparent text-on-surface-variant dark:text-gray-400'
-          }`}
+            }`}
         >
           Details & Deal
         </button>
         <button
           onClick={() => setActiveTab('timeline')}
-          className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition-colors ${
-            activeTab === 'timeline'
+          className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition-colors ${activeTab === 'timeline'
               ? 'border-[#00236f] text-[#00236f] dark:border-[#3b82f6] dark:text-[#3b82f6]'
               : 'border-transparent text-on-surface-variant dark:text-gray-400'
-          }`}
+            }`}
         >
           Timeline
         </button>
         <button
           onClick={() => setActiveTab('documents')}
-          className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition-colors ${
-            activeTab === 'documents'
+          className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition-colors ${activeTab === 'documents'
               ? 'border-[#00236f] text-[#00236f] dark:border-[#3b82f6] dark:text-[#3b82f6]'
               : 'border-transparent text-on-surface-variant dark:text-gray-400'
-          }`}
+            }`}
         >
           Documents
         </button>
@@ -302,7 +299,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
               <CardContent className="space-y-md pt-md">
                 <div className="flex items-center gap-3 text-body-md text-on-surface dark:text-gray-300">
                   <div className="bg-primary/5 p-2 rounded-lg text-primary dark:text-[#3b82f6]">
-                    <User className="h-4 w-4"/>
+                    <User className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-[10px] text-outline font-bold uppercase tracking-wider">Contact Person</p>
@@ -311,7 +308,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                 </div>
                 <div className="flex items-center gap-3 text-body-md text-on-surface dark:text-gray-300">
                   <div className="bg-primary/5 p-2 rounded-lg text-primary dark:text-[#3b82f6]">
-                    <Mail className="h-4 w-4"/>
+                    <Mail className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-[10px] text-outline font-bold uppercase tracking-wider">Email</p>
@@ -320,7 +317,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                 </div>
                 <div className="flex items-center gap-3 text-body-md text-on-surface dark:text-gray-300">
                   <div className="bg-primary/5 p-2 rounded-lg text-primary dark:text-[#3b82f6]">
-                    <Phone className="h-4 w-4"/>
+                    <Phone className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-[10px] text-outline font-bold uppercase tracking-wider">Phone</p>
@@ -329,7 +326,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                 </div>
                 <div className="flex items-center gap-3 text-body-md text-on-surface dark:text-gray-300">
                   <div className="bg-primary/5 p-2 rounded-lg text-primary dark:text-[#3b82f6]">
-                    <Building2 className="h-4 w-4"/>
+                    <Building2 className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-[10px] text-outline font-bold uppercase tracking-wider">Industry</p>
@@ -338,7 +335,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                 </div>
                 <div className="flex items-center gap-3 text-body-md text-on-surface dark:text-gray-300">
                   <div className="bg-primary/5 p-2 rounded-lg text-primary dark:text-[#3b82f6]">
-                    <Sparkles className="h-4 w-4"/>
+                    <Sparkles className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-[10px] text-outline font-bold uppercase tracking-wider">Source</p>
@@ -363,7 +360,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                     min="0"
                     placeholder="e.g. 50000"
                     value={dealEdit?.estimated_value ?? ''}
-                    onChange={e => setDealEdit(d => d ? {...d, estimated_value: e.target.value} : d)}
+                    onChange={e => setDealEdit(d => d ? { ...d, estimated_value: e.target.value } : d)}
                     className="font-bold dark:bg-[#1e293b] dark:border-[#334155]"
                   />
                 </div>
@@ -372,7 +369,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                   <input
                     type="date"
                     value={dealEdit?.expected_close_date ?? ''}
-                    onChange={e => setDealEdit(d => d ? {...d, expected_close_date: e.target.value} : d)}
+                    onChange={e => setDealEdit(d => d ? { ...d, expected_close_date: e.target.value } : d)}
                     className="flex h-10 w-full rounded-md border border-outline-variant dark:border-[#334155] bg-surface-container-lowest dark:bg-[#1e293b] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium"
                   />
                 </div>
@@ -380,7 +377,7 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                   <label className="text-[10px] text-outline uppercase font-bold tracking-wider">Priority Level</label>
                   <Select
                     value={dealEdit?.priority ?? 'Medium'}
-                    onValueChange={v => setDealEdit(d => d ? {...d, priority: v || 'Medium'} : d)}
+                    onValueChange={v => setDealEdit(d => d ? { ...d, priority: v || 'Medium' } : d)}
                   >
                     <SelectTrigger className="dark:bg-[#1e293b] dark:border-[#334155] font-semibold"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -409,19 +406,19 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                   <FileText className="h-4 w-4" /> Documents
                 </CardTitle>
                 <Dialog open={isDocOpen} onOpenChange={setIsDocOpen}>
-                  <DialogTrigger 
+                  <DialogTrigger
                     render={
                       <button className="flex items-center gap-1 text-[10px] uppercase font-bold text-primary dark:text-[#3b82f6] hover:underline">
-                        <Upload className="h-3 w-3"/> Upload
+                        <Upload className="h-3 w-3" /> Upload
                       </button>
-                    } 
+                    }
                   />
                   <DialogContent className="bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] sm:max-w-[440px] w-full">
                     <DialogHeader><DialogTitle>Upload File</DialogTitle></DialogHeader>
                     <form onSubmit={handleDocUpload} className="space-y-md pt-4">
                       <div className="space-y-1">
                         <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Document Type</label>
-                        <Select required value={newDoc.document_type} onValueChange={v => setNewDoc({...newDoc, document_type: v || ''})}>
+                        <Select required value={newDoc.document_type} onValueChange={v => setNewDoc({ ...newDoc, document_type: v || '' })}>
                           <SelectTrigger><SelectValue placeholder="Document Type" /></SelectTrigger>
                           <SelectContent>
                             {['Contract', 'NDA', 'Proposal', 'Invoice', 'Other'].map(t => (
@@ -432,8 +429,8 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Select File</label>
-                        <Input 
-                          type="file" 
+                        <Input
+                          type="file"
                           onChange={e => setSelectedFile(e.target.files?.[0] || null)}
                           required
                           className="dark:bg-[#1e293b] dark:border-[#334155]"
@@ -441,10 +438,10 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Description</label>
-                        <Input 
-                          placeholder="Description (Optional)" 
+                        <Input
+                          placeholder="Description (Optional)"
                           value={newDoc.description}
-                          onChange={e => setNewDoc({...newDoc, description: e.target.value})}
+                          onChange={e => setNewDoc({ ...newDoc, description: e.target.value })}
                           className="dark:bg-[#1e293b] dark:border-[#334155]"
                         />
                       </div>
@@ -496,9 +493,9 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
               <Clock className="h-5 w-5 text-primary" /> Sales Timeline & Activities
             </h2>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="hidden md:inline-flex h-8 px-3 text-xs gap-1.5 dark:border-[#1e293b] font-semibold text-on-surface-variant"
                 onClick={() => {
                   if (activities.length === 0) {
@@ -513,19 +510,19 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                 Export Timeline
               </Button>
               <Dialog open={isActivityOpen} onOpenChange={setIsActivityOpen}>
-                <DialogTrigger 
+                <DialogTrigger
                   render={
                     <button className="flex items-center justify-center gap-1.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm">
-                      <Plus className="h-3.5 w-3.5 mr-0.5"/> Log Activity
+                      <Plus className="h-3.5 w-3.5 mr-0.5" /> Log Activity
                     </button>
-                  } 
+                  }
                 />
                 <DialogContent className="bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] sm:max-w-[440px] w-full">
                   <DialogHeader><DialogTitle>Log Call/Meeting</DialogTitle></DialogHeader>
                   <form onSubmit={handleActivitySubmit} className="space-y-md pt-4">
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Activity Type</label>
-                      <Select required value={newActivity.activity_type} onValueChange={v => setNewActivity({...newActivity, activity_type: v || ''})}>
+                      <Select required value={newActivity.activity_type} onValueChange={v => setNewActivity({ ...newActivity, activity_type: v || '' })}>
                         <SelectTrigger><SelectValue placeholder="Activity Type" /></SelectTrigger>
                         <SelectContent>
                           {['Market Research Interview', 'Follow-up Call', 'Demo', 'Proposal Sent', 'Meeting', 'Email', 'Note'].map(t => (
@@ -536,30 +533,30 @@ export default function ProspectDetailView({ prospectId }: ProspectDetailViewPro
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Date & Time</label>
-                      <input 
-                        type="datetime-local" 
+                      <input
+                        type="datetime-local"
                         className="flex h-10 w-full rounded-md border border-outline-variant dark:border-[#334155] bg-surface-container-lowest dark:bg-[#1e293b] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium"
                         required
                         value={newActivity.activity_date}
-                        onChange={e => setNewActivity({...newActivity, activity_date: e.target.value})}
+                        onChange={e => setNewActivity({ ...newActivity, activity_date: e.target.value })}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Activity Notes</label>
-                      <Textarea 
-                        placeholder="Log detailed notes from interaction..." 
+                      <Textarea
+                        placeholder="Log detailed notes from interaction..."
                         className="min-h-[100px] dark:bg-[#1e293b] dark:border-[#334155]"
                         value={newActivity.notes}
-                        onChange={e => setNewActivity({...newActivity, notes: e.target.value})}
+                        onChange={e => setNewActivity({ ...newActivity, notes: e.target.value })}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] font-bold text-outline uppercase tracking-wider">Next Action Steps</label>
-                      <Textarea 
-                        placeholder="Expected deliverables, timeline commitments, or scheduling items..." 
+                      <Textarea
+                        placeholder="Expected deliverables, timeline commitments, or scheduling items..."
                         className="dark:bg-[#1e293b] dark:border-[#334155]"
                         value={newActivity.next_steps}
-                        onChange={e => setNewActivity({...newActivity, next_steps: e.target.value})}
+                        onChange={e => setNewActivity({ ...newActivity, next_steps: e.target.value })}
                       />
                     </div>
                     <Button type="submit" className="w-full bg-[#00236f] hover:bg-[#1e3a8a] text-white">Save Action Item</Button>

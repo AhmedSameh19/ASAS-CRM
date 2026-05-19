@@ -40,21 +40,21 @@ export function exportToCSV(data: Record<string, any>[], filename: string): void
  */
 export function prospectsToCSV(prospects: any[]): Record<string, any>[] {
   return prospects.map(p => ({
-    'Company Name':         p.company_name ?? '',
-    'Contact Person':       p.contact_person ?? '',
-    'Email':                p.email ?? '',
-    'Phone':                p.phone ?? '',
-    'Industry':             p.industry ?? '',
-    'Company Size':         p.company_size ?? '',
-    'Source':               p.source ?? '',
-    'Status':               p.status ?? '',
-    'Priority':             p.priority ?? '',
+    'Company Name': p.company_name ?? '',
+    'Contact Person': p.contact_person ?? '',
+    'Email': p.email ?? '',
+    'Phone': p.phone ?? '',
+    'Industry': p.industry ?? '',
+    'Company Size': p.company_size ?? '',
+    'Source': p.source ?? '',
+    'Status': p.status ?? '',
+    'Priority': p.priority ?? '',
     'Estimated Value (EGP)': p.estimated_value ?? '',
-    'Expected Close Date':  p.expected_close_date
+    'Expected Close Date': p.expected_close_date
       ? new Date(p.expected_close_date).toLocaleDateString()
       : '',
-    'Notes':                p.notes ?? '',
-    'Created At':           p.created_at
+    'Notes': p.notes ?? '',
+    'Created At': p.created_at
       ? new Date(p.created_at).toLocaleDateString()
       : '',
   }));
@@ -65,16 +65,16 @@ export function prospectsToCSV(prospects: any[]): Record<string, any>[] {
  */
 export function activitiesToCSV(activities: any[], companyName: string): Record<string, any>[] {
   return activities.map(a => ({
-    'Company':       companyName,
+    'Company': companyName,
     'Activity Type': a.activity_type ?? '',
-    'Date':          a.activity_date
+    'Date': a.activity_date
       ? new Date(a.activity_date).toLocaleString()
       : '',
     'Duration (min)': a.duration ?? '',
-    'Notes':          a.notes ?? '',
-    'Outcome':        a.outcome ?? '',
-    'Next Steps':     a.next_steps ?? '',
-    'Logged At':      a.created_at
+    'Notes': a.notes ?? '',
+    'Outcome': a.outcome ?? '',
+    'Next Steps': a.next_steps ?? '',
+    'Logged At': a.created_at
       ? new Date(a.created_at).toLocaleDateString()
       : '',
   }));
