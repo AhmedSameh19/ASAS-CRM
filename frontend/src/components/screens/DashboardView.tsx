@@ -3,13 +3,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import { useTheme } from 'next-themes';
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import { 
-  Users, CheckCircle2, TrendingUp, Percent, BarChart3, 
-  MoreHorizontal, Plus, Calendar, ArrowRight, UserPlus, FilePlus2, Sparkles, RefreshCw,
+import {
+  Users, CheckCircle2, TrendingUp, Percent, BarChart3,
+  MoreHorizontal, Plus, Calendar, ArrowRight, UserPlus, FilePlus2, Sparkles, RefreshCw, ArrowDown,
   Phone, Mail, MessageSquare, Video, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -135,6 +135,99 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     return d.toLocaleString('en-US', { timeZone: 'Africa/Cairo', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
+  // Define pipeline stages sequentially for conversion rate monitoring
+  const pipelineStages = [
+    { name: 'New Lead', label: 'New Lead' },
+    { name: 'MR Scheduled', label: 'MR Scheduled' },
+    { name: 'MR Completed', label: 'MR Completed' },
+    { name: 'Demo Scheduled', label: 'Demo Scheduled' },
+    { name: 'Demo Done', label: 'Demo Done' },
+    { name: 'Proposal Sent', label: 'Proposal Sent' },
+    { name: 'Negotiation', label: 'Negotiation' },
+    { name: 'Won', label: 'Won' },
+    { name: 'Lost', label: 'Lost' }
+  ];
+
+  const getStageCount = (stageName: string) => {
+    const val = data?.pipelineData?.find((p: any) => p.name === stageName)?.count;
+    return val !== undefined ? Number(val) || 0 : 0;
+  };
+
+  const cumulativeCounts = (() => {
+    // 1. Calculate active cumulative counts (only active stages + Won)
+    const activeCumulative = pipelineStages.map((stage, idx) => {
+      let sum = 0;
+      for (let j = idx; j < pipelineStages.length; j++) {
+        if (pipelineStages[j].name !== 'Lost') {
+          sum += getStageCount(pipelineStages[j].name);
+        }
+      }
+      return sum;
+    });
+
+    // 2. Distribute Lost leads cumulatively based on the active progression transition rates
+    const totalLostCount = getStageCount('Lost');
+    const lostCumulative = new Array(pipelineStages.length).fill(0);
+    
+    // All Lost leads started as New Leads
+    lostCumulative[0] = totalLostCount;
+    
+    for (let idx = 1; idx < pipelineStages.length; idx++) {
+      if (pipelineStages[idx].name === 'Lost' || pipelineStages[idx].name === 'Won') {
+        lostCumulative[idx] = 0;
+      } else {
+        const prevActive = activeCumulative[idx - 1];
+        const currActive = activeCumulative[idx];
+        const transitionRate = prevActive > 0 ? currActive / prevActive : 0;
+        lostCumulative[idx] = lostCumulative[idx - 1] * transitionRate;
+      }
+    }
+
+    // 3. Combine active cumulative and lost cumulative to get the true total cumulative count for each stage
+    return pipelineStages.map((stage, idx) => {
+      let sum = 0;
+      if (stage.name === 'Lost') {
+        sum = totalLostCount;
+      } else {
+        sum = Math.round(activeCumulative[idx] + lostCumulative[idx]);
+      }
+      return {
+        ...stage,
+        count: sum
+      };
+    });
+  })();
+
+  const conversionRates = cumulativeCounts.map((stage, idx) => {
+    if (idx === 0) {
+      return {
+        ...stage,
+        stageToStageRate: 100,
+        overallRate: 100,
+        dropoff: 0
+      };
+    }
+    const prevStage = cumulativeCounts[idx - 1];
+    
+    // For both Won and Lost outcomes, their transition predecessor is Negotiation
+    let prevCount = prevStage.count;
+    if (stage.name === 'Won' || stage.name === 'Lost') {
+      const negotiationStage = cumulativeCounts.find(s => s.name === 'Negotiation');
+      prevCount = negotiationStage ? negotiationStage.count : prevStage.count;
+    }
+
+    const stageToStageRate = prevCount > 0 ? (stage.count / prevCount) * 100 : 0;
+    const overallRate = cumulativeCounts[0].count > 0 ? (stage.count / cumulativeCounts[0].count) * 100 : 0;
+    const dropoff = stage.name === 'Lost' ? 0 : 100 - stageToStageRate;
+
+    return {
+      ...stage,
+      stageToStageRate,
+      overallRate,
+      dropoff
+    };
+  });
+
   return (
     <div className="space-y-lg max-w-[1400px] mx-auto p-4 md:p-0">
       {/* Page Title & Filters Row */}
@@ -152,8 +245,8 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
           {/* Date Range Filter */}
           <div className="flex items-center bg-surface-container-lowest dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-lg px-3 py-2 shadow-sm">
             <Calendar className="h-4 w-4 text-outline mr-2" />
-            <select 
-              value={dateRange} 
+            <select
+              value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
               className="bg-transparent border-none focus:ring-0 font-label-md text-label-md text-on-surface dark:text-gray-200 pr-8 py-0 focus:outline-none cursor-pointer"
             >
@@ -166,8 +259,8 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
 
           {/* Industry Filter */}
           <div className="flex items-center bg-surface-container-lowest dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-lg px-3 py-2 shadow-sm">
-            <select 
-              value={industry} 
+            <select
+              value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               className="bg-transparent border-none focus:ring-0 font-label-md text-label-md text-on-surface dark:text-gray-200 pr-8 py-0 focus:outline-none cursor-pointer"
             >
@@ -179,7 +272,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
             </select>
           </div>
 
-          <button 
+          <button
             onClick={handleManualRefresh}
             className="p-2 border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-[#1e293b] rounded-lg text-on-surface-variant transition-colors flex items-center gap-1.5"
             title={`Last checked: ${lastUpdated.toLocaleTimeString()}`}
@@ -201,9 +294,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
             <span className="font-display-lg text-display-lg text-on-surface dark:text-white leading-none">
               {loading ? '...' : (data?.metrics?.total ?? 0).toLocaleString()}
             </span>
-            <span className="font-label-sm text-label-sm text-[#059669] bg-[#059669]/10 dark:bg-[#059669]/20 px-1.5 py-0.5 rounded mb-1 flex items-center gap-0.5">
-              <TrendingUp className="h-3 w-3" /> +12%
-            </span>
+
           </div>
         </div>
 
@@ -217,9 +308,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
             <span className="font-display-lg text-display-lg text-on-surface dark:text-white leading-none">
               {loading ? '...' : (data?.metrics?.active ?? 0).toLocaleString()}
             </span>
-            <span className="font-label-sm text-label-sm text-[#059669] bg-[#059669]/10 dark:bg-[#059669]/20 px-1.5 py-0.5 rounded mb-1 flex items-center gap-0.5">
-              <TrendingUp className="h-3 w-3" /> +5%
-            </span>
+
           </div>
         </div>
 
@@ -261,8 +350,8 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
               {loading ? '...' : (data?.metrics?.total > 0 ? ((data.metrics.won / data.metrics.total) * 100).toFixed(1) : '0.0')}%
             </span>
             <div className="w-full bg-surface-container-highest dark:bg-[#1e293b] rounded-full h-1.5">
-              <div 
-                className="bg-[#00236f] dark:bg-[#3b82f6] h-1.5 rounded-full transition-all duration-500" 
+              <div
+                className="bg-[#00236f] dark:bg-[#3b82f6] h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${loading ? 0 : (data?.metrics?.total > 0 ? (data.metrics.won / data.metrics.total) * 100 : 0)}%` }}
               ></div>
             </div>
@@ -292,19 +381,19 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.pipelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#1e293b' : '#e5e7eb'} />
-                  <XAxis 
-                    dataKey="name" 
+                  <XAxis
+                    dataKey="name"
                     tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#444651' }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#444651' }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
+                  <Tooltip
+                    contentStyle={{
                       backgroundColor: theme === 'dark' ? '#0b1120' : '#fff',
                       borderColor: theme === 'dark' ? '#1e293b' : '#c5c5d3',
                       borderRadius: '8px',
@@ -312,16 +401,16 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
                     }}
                     cursor={{ fill: theme === 'dark' ? 'rgba(59, 130, 246, 0.05)' : 'rgba(0, 35, 111, 0.03)' }}
                   />
-                  <Bar 
-                    dataKey="count" 
-                    fill={theme === 'dark' ? '#3b82f6' : '#00236f'} 
+                  <Bar
+                    dataKey="count"
+                    fill={theme === 'dark' ? '#3b82f6' : '#00236f'}
                     radius={[6, 6, 0, 0]}
                     maxBarSize={48}
                   >
                     {data.pipelineData.map((entry: any, index: number) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.name === 'Won' ? (theme === 'dark' ? '#10b981' : '#059669') : (theme === 'dark' ? '#3b82f6' : '#00236f')} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.name === 'Won' ? (theme === 'dark' ? '#10b981' : '#059669') : (theme === 'dark' ? '#3b82f6' : '#00236f')}
                       />
                     ))}
                   </Bar>
@@ -331,7 +420,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
               <div className="flex h-full w-full flex-col items-center justify-center border-2 border-dashed border-outline-variant dark:border-[#1e293b] rounded-lg">
                 <p className="text-sm text-outline dark:text-gray-500">No sales funnel prospects found.</p>
                 {onAddProspectClick && (
-                  <button 
+                  <button
                     onClick={onAddProspectClick}
                     className="mt-2 text-xs font-semibold text-primary dark:text-[#3b82f6] hover:underline flex items-center gap-1"
                   >
@@ -343,68 +432,159 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
           </div>
         </div>
 
-        {/* Prospects by Industry */}
+        {/* Pipeline Conversion Rates */}
         <div className="lg:col-span-1 bg-surface-container-lowest dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-lg p-lg flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white">Prospects by Industry</h3>
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white flex items-center gap-2">
+                <Percent className="h-5 w-5 text-primary dark:text-[#3b82f6]" /> Conversion Rates
+              </h3>
+              <p className="text-[10px] text-on-surface-variant dark:text-gray-400 mt-0.5">
+                Sequential stage-to-stage transition & drop-off rates
+              </p>
+            </div>
             <button className="text-outline-variant hover:text-on-surface dark:hover:text-white transition-colors">
               <MoreHorizontal className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="h-[200px] w-full flex items-center justify-center relative my-2">
+          <div className="flex-1 overflow-y-auto max-h-[360px] pr-1 mt-4 space-y-3 scrollbar-thin">
             {loading ? (
-              <span className="text-sm text-outline animate-pulse">Loading breakdown...</span>
-            ) : data?.industryData && data.industryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.industryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {data.industryData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={activeColors[index % activeColors.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ 
-                      backgroundColor: theme === 'dark' ? '#0b1120' : '#fff',
-                      borderColor: theme === 'dark' ? '#1e293b' : '#c5c5d3',
-                      borderRadius: '8px',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="w-32 h-32 rounded-full border-4 border-surface-container-low dark:border-[#1e293b] flex items-center justify-center text-xs text-outline">
-                No Data
+              <div className="flex flex-col gap-4 py-4 animate-pulse">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-10 bg-surface-container dark:bg-gray-800 rounded-lg"></div>
+                ))}
               </div>
-            )}
-          </div>
+            ) : conversionRates && conversionRates.length > 0 ? (
+              <>
+                {conversionRates
+                  .filter((s) => s.name !== 'Won' && s.name !== 'Lost')
+                  .map((stage, idx, filteredArr) => {
+                    const colors = [
+                      'border-[#00236f] dark:border-[#3b82f6]',
+                      'border-[#4059aa] dark:border-[#60a5fa]',
+                      'border-[#855300] dark:border-[#fbbf24]',
+                      'border-[#fea619] dark:border-[#f59e0b]',
+                      'border-[#10b981] dark:border-[#10b981]'
+                    ];
+                    const activeColor = colors[idx % colors.length];
 
-          {/* Industry Legend */}
-          <div className="mt-auto grid grid-cols-2 gap-y-2.5 pt-4 border-t border-outline-variant dark:border-[#1e293b]">
-            {loading ? (
-              <div className="h-10 col-span-2 bg-surface-container dark:bg-gray-800 rounded animate-pulse"></div>
-            ) : data?.industryData && data.industryData.length > 0 ? (
-              data.industryData.map((item: any, idx: number) => (
-                <div key={item.name} className="flex items-center gap-2">
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-                    style={{ backgroundColor: activeColors[idx % activeColors.length] }}
-                  ></div>
-                  <span className="font-label-md text-label-md text-on-surface-variant dark:text-gray-400 truncate max-w-[120px]">
-                    {item.name} ({item.value})
-                  </span>
-                </div>
-              ))
+                    return (
+                      <div key={stage.name} className="flex flex-col">
+                        {/* Stage Card */}
+                        <div className={`p-2.5 bg-surface-container-low dark:bg-[#111827] border-l-4 ${activeColor} rounded-r-lg shadow-sm flex items-center justify-between`}>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-xs text-on-surface dark:text-gray-200 block truncate">
+                              {stage.label}
+                            </span>
+                            <span className="text-[10px] text-on-surface-variant dark:text-gray-400 flex items-center gap-1 font-medium">
+                              <Users className="h-3.5 w-3.5 inline text-outline dark:text-gray-500" />
+                              {stage.count} cumulative
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-bold text-primary dark:text-[#3b82f6]">
+                              {stage.overallRate.toFixed(0)}%
+                            </span>
+                            <span className="text-[9px] text-on-surface-variant dark:text-gray-500 block">
+                              Overall
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Transition Indicator to next stage */}
+                        {idx < filteredArr.length - 1 && (
+                          <div className="flex items-center gap-4 px-6 py-0.5 relative my-0.5">
+                            {/* Connecting Line */}
+                            <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-800" />
+                            
+                            <div className="z-10 bg-white dark:bg-[#0b1120] border border-gray-100 dark:border-gray-800 rounded-full p-0.5 shadow-sm ml-0.5">
+                              <ArrowDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <span className="font-semibold text-green-600 dark:text-green-400">
+                                {conversionRates[idx + 1].stageToStageRate.toFixed(0)}% conv
+                              </span>
+                              <span className="text-gray-300 dark:text-gray-700">|</span>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                {conversionRates[idx + 1].dropoff.toFixed(0)}% drop
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                {/* Outcomes Branched Splitting Block (Won / Lost) */}
+                {(() => {
+                  const wonStage = conversionRates.find((s) => s.name === 'Won');
+                  const lostStage = conversionRates.find((s) => s.name === 'Lost');
+                  if (!wonStage || !lostStage) return null;
+
+                  return (
+                    <div className="flex flex-col mt-2">
+                      {/* Branch Connector Line */}
+                      <div className="flex flex-col items-center mb-1">
+                        <div className="w-0.5 h-3 bg-gray-200 dark:bg-gray-800" />
+                        <div className="flex items-center justify-between w-full max-w-[200px] px-8 relative">
+                          <div className="absolute left-0 right-0 top-0 h-0.5 bg-gray-200 dark:bg-gray-800" />
+                          <div className="absolute left-0 w-0.5 h-3 bg-gray-200 dark:bg-gray-800" />
+                          <div className="absolute right-0 w-0.5 h-3 bg-gray-200 dark:bg-gray-800" />
+                        </div>
+                      </div>
+
+                      {/* Won & Lost Side-by-Side Cards */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Won Card */}
+                        <div className="p-2.5 bg-green-50/50 dark:bg-[#065f46]/10 border-l-4 border-[#10b981] dark:border-[#10b981] rounded-r-lg shadow-sm flex flex-col justify-between min-h-[70px]">
+                          <div>
+                            <span className="font-semibold text-xs text-green-800 dark:text-green-400 block truncate">
+                              {wonStage.label}
+                            </span>
+                            <span className="text-[9px] text-green-700/80 dark:text-green-500/80 flex items-center gap-1 font-medium mt-0.5">
+                              <Users className="h-3 w-3 inline" />
+                              {wonStage.count} won
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-baseline justify-between border-t border-green-100/50 dark:border-green-900/20 pt-1.5">
+                            <span className="text-[10px] text-green-700 dark:text-green-400 font-bold">
+                              {wonStage.stageToStageRate.toFixed(0)}% conv
+                            </span>
+                            <span className="text-[8px] text-green-600/70 dark:text-green-500/50 block">
+                              Total: {wonStage.overallRate.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Lost Card */}
+                        <div className="p-2.5 bg-red-50/50 dark:bg-[#991b1b]/10 border-l-4 border-[#ef4444] dark:border-[#ef4444] rounded-r-lg shadow-sm flex flex-col justify-between min-h-[70px]">
+                          <div>
+                            <span className="font-semibold text-xs text-red-800 dark:text-red-400 block truncate">
+                              {lostStage.label}
+                            </span>
+                            <span className="text-[9px] text-red-700/80 dark:text-red-500/80 flex items-center gap-1 font-medium mt-0.5">
+                              <Users className="h-3 w-3 inline" />
+                              {lostStage.count} lost
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-baseline justify-between border-t border-red-100/50 dark:border-red-900/20 pt-1.5">
+                            <span className="text-[10px] text-red-700 dark:text-red-400 font-bold">
+                              {lostStage.stageToStageRate.toFixed(0)}% loss
+                            </span>
+                            <span className="text-[8px] text-red-600/70 dark:text-red-500/50 block">
+                              Total: {lostStage.overallRate.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
             ) : (
-              <p className="text-[11px] text-outline text-center col-span-2">No active industry distributions.</p>
+              <p className="text-xs text-outline text-center py-8">No pipeline stages found.</p>
             )}
           </div>
         </div>
@@ -414,7 +594,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
       <div className="bg-surface-container-lowest dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-lg p-lg shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white">Recent Activities</h3>
-          <button 
+          <button
             onClick={() => onNavigate?.('/prospects')}
             className="font-label-md text-label-md text-primary dark:text-[#3b82f6] hover:underline flex items-center gap-1 font-bold"
           >
@@ -455,7 +635,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
           ) : (
             <div className="py-8 text-center border-2 border-dashed border-outline-variant dark:border-[#1e293b] rounded-lg">
               <p className="text-sm text-outline dark:text-gray-500">No recent activities logged.</p>
-              <button 
+              <button
                 onClick={() => onNavigate?.('/prospects')}
                 className="mt-2 text-xs font-semibold text-primary dark:text-[#3b82f6] hover:underline"
               >

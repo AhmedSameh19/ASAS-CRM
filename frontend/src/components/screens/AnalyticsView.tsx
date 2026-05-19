@@ -251,29 +251,29 @@ export default function AnalyticsView() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data?.industryData || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#1e293b' : '#e5e7eb'} vertical={false} />
-                  <XAxis 
-                    dataKey="name" 
+                  <XAxis
+                    dataKey="name"
                     tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#444651' }}
                     tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: 11, fill: theme === 'dark' ? '#94a3b8' : '#444651' }}
                     tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value: any) => [`${value} Leads`, 'Prospects']}
-                    contentStyle={{ 
+                    contentStyle={{
                       backgroundColor: theme === 'dark' ? '#0b1120' : '#fff',
                       borderColor: theme === 'dark' ? '#1e293b' : '#c5c5d3',
                       borderRadius: '8px',
                     }}
                     itemStyle={{ color: theme === 'dark' ? '#fff' : '#000' }}
                   />
-                  <Bar 
-                    dataKey="value" 
+                  <Bar
+                    dataKey="value"
                     radius={[4, 4, 0, 0]}
                   >
                     {(data?.industryData || []).map((entry: any, index: number) => (
