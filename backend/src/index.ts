@@ -12,7 +12,7 @@ type Bindings = {
   DATABASE_URL: string
   JWT_SECRET: string
   R2_PUBLIC_URL: string
-  BUCKET: R2Bucket
+  BUCKET?: R2Bucket
 }
 
 const app = new Hono<{ Bindings: Bindings }>()

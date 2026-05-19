@@ -4,7 +4,7 @@ import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DATABASE_URL: string
-  BUCKET: R2Bucket
+  BUCKET?: R2Bucket
   R2_PUBLIC_URL: string
 }
 
@@ -19,6 +19,11 @@ documents.post('/', async (c) => {
   const user = c.get('jwtPayload') as any
 
   try {
+    if (!c.env.BUCKET) {
+      return c.json({ 
+        error: 'Cloudflare R2 is not active or enabled on this account. Please go to the Cloudflare Dashboard -> R2 and enable/activate it, or check your wrangler.toml configuration.' 
+      }, 400)
+    }
     const formData = await c.req.parseBody()
     const file = formData['file'] as File
     const document_type = formData['document_type'] as string
@@ -95,6 +100,11 @@ documentOperations.delete('/:id', async (c) => {
   const id = c.req.param('id')
 
   try {
+    if (!c.env.BUCKET) {
+      return c.json({ 
+        error: 'Cloudflare R2 is not active or enabled on this account. Please go to the Cloudflare Dashboard -> R2 and enable/activate it, or check your wrangler.toml configuration.' 
+      }, 400)
+    }
     const result = await db.query('SELECT * FROM documents WHERE id = $1', [id])
     if (result.rowCount === 0) return c.json({ error: 'Not found' }, 404)
 
