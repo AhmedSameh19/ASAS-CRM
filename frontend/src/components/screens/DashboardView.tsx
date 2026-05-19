@@ -168,10 +168,10 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     // 2. Distribute Lost leads cumulatively based on the active progression transition rates
     const totalLostCount = getStageCount('Lost');
     const lostCumulative = new Array(pipelineStages.length).fill(0);
-    
+
     // All Lost leads started as New Leads
     lostCumulative[0] = totalLostCount;
-    
+
     for (let idx = 1; idx < pipelineStages.length; idx++) {
       if (pipelineStages[idx].name === 'Lost' || pipelineStages[idx].name === 'Won') {
         lostCumulative[idx] = 0;
@@ -208,7 +208,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
       };
     }
     const prevStage = cumulativeCounts[idx - 1];
-    
+
     // For both Won and Lost outcomes, their transition predecessor is Negotiation
     let prevCount = prevStage.count;
     if (stage.name === 'Won' || stage.name === 'Lost') {
@@ -497,11 +497,11 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
                           <div className="flex items-center gap-4 px-6 py-0.5 relative my-0.5">
                             {/* Connecting Line */}
                             <div className="absolute left-7 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-800" />
-                            
+
                             <div className="z-10 bg-white dark:bg-[#0b1120] border border-gray-100 dark:border-gray-800 rounded-full p-0.5 shadow-sm ml-0.5">
                               <ArrowDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
                             </div>
-                            
+
                             <div className="flex items-center gap-2 text-[10px]">
                               <span className="font-semibold text-green-600 dark:text-green-400">
                                 {conversionRates[idx + 1].stageToStageRate.toFixed(0)}% conv

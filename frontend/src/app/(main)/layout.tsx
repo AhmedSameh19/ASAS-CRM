@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { LayoutDashboard, Users, LogOut, Loader2, KanbanSquare, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
+import { AsasLogo } from '@/components/AsasLogo';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuthStore();
@@ -45,7 +46,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <div className="flex h-screen bg-[#F3F4F6] dark:bg-[#020817] overflow-hidden flex-row">
       {/* Sidebar Navigation: Visible ONLY on desktop (>= lg) */}
       <aside className="hidden lg:flex lg:flex-col w-[240px] bg-white dark:bg-[#0b1120] border-r border-[#E5E7EB] dark:border-[#1e293b] h-full flex-shrink-0">
-        <div className="p-6">
+        <div className="p-6 flex flex-col gap-2">
+          <AsasLogo size="sm" className="hover:scale-105 transition-transform duration-300" />
           <h1 className="text-xl font-bold tracking-tight text-[#00236f] dark:text-[#3b82f6]">ASAS CRM</h1>
         </div>
         <nav className="flex-1 px-2 space-y-1">
