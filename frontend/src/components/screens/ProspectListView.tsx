@@ -471,8 +471,8 @@ export default function ProspectListView() {
                         <button
                           onClick={() => setPage(p)}
                           className={`h-7 w-7 text-xs font-semibold rounded flex items-center justify-center transition-colors ${page === p
-                              ? 'bg-[#00236f] text-white dark:bg-[#3b82f6]'
-                              : 'border border-outline-variant/30 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e293b] text-gray-700 dark:text-gray-400'
+                            ? 'bg-[#00236f] text-white dark:bg-[#3b82f6]'
+                            : 'border border-outline-variant/30 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1e293b] text-gray-700 dark:text-gray-400'
                             }`}
                         >
                           {p}

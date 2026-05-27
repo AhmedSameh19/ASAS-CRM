@@ -115,6 +115,12 @@ prospects.post('/', async (c) => {
   const { company_name, contact_person, phone, email, industry, company_size, source, status, estimated_value, expected_close_date, priority, notes } = body
 
   try {
+    const flexible_phone_number = '%' + phone;
+    const prospect = await db.query('Select company_name from prospects where email ILIKE $1 and phone LIKE $2', [email, flexible_phone_number])
+    if (prospect.rows[0]) {
+      return c.json({ error: "This lead is already available", prospect: prospect.rows[0] }, 409)
+    }
+
     // Database Isolation: Automatically assign new prospects to the authenticated user
     const query = `
       INSERT INTO prospects (
