@@ -19,9 +19,9 @@ const hardcodedUsers = [
 auth.post('/login', async (c) => {
   const { email, password } = await c.req.json()
   const db = getDb(c.env.DATABASE_URL)
-  
+
   try {
-    const result = await db.query('SELECT * FROM users WHERE email = $1', [email])
+    const result = await db.query('SELECT * FROM users WHERE Lower(email) = Lower($1)', [email])
     let user = result.rows[0]
 
     // Fallback: If no users exist, check if it's one of the hardcoded users and seed them
