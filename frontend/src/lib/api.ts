@@ -1,7 +1,9 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787/api';
+// All requests go to /api/* which Next.js proxies to the backend worker.
+// This keeps cookies same-origin so the HttpOnly auth_token cookie is sent automatically.
+const API_BASE = '/api';
 
 async function request(endpoint: string, options: RequestInit = {}) {
-  const url = `${API_URL}${endpoint}`;
+  const url = `${API_BASE}${endpoint}`;
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -14,7 +16,7 @@ async function request(endpoint: string, options: RequestInit = {}) {
   const config: RequestInit = {
     ...options,
     headers,
-    // Crucial: sends the HttpOnly auth_token cookie on every cross-origin request
+    // Same-origin after the proxy, but keep this for safety
     credentials: 'include',
   };
 
