@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import {
@@ -30,6 +30,7 @@ interface User {
   name: string;
   role: string;
   requires_password_change: boolean;
+  temp_password?: string;
   created_at: string;
 }
 
@@ -82,6 +83,20 @@ export default function SettingsView() {
   const [stageColor, setStageColor] = useState(PRESET_COLORS[0]);
   const [stageType, setStageType] = useState<'active' | 'won' | 'lost'>('active');
   const [saveStageLoading, setSaveStageLoading] = useState(false);
+
+  // Placement positioning state
+  const [placementType, setPlacementType] = useState<'current' | 'first' | 'last' | 'after'>('last');
+  const [placementAfterStageId, setPlacementAfterStageId] = useState<number | ''>('');
+
+  const reorderTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (reorderTimeoutRef.current) {
+        clearTimeout(reorderTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Custom Confirmation Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -192,36 +207,65 @@ export default function SettingsView() {
       return;
     }
 
-    // Generate internal name from label if creating new
     const internalName = stageLabel.trim();
 
     try {
       setSaveStageLoading(true);
+
+      let savedStage: Stage;
       if (editingStage) {
         // Update stage
-        await api.put(`/workflow-stages/${editingStage.id}`, {
+        const res = await api.put(`/workflow-stages/${editingStage.id}`, {
           name: internalName,
           label: stageLabel,
           color: stageColor,
           type: stageType,
           position: editingStage.position
         });
-        toast.success('Workflow stage updated');
+        savedStage = res.stage;
       } else {
         // Create stage
-        await api.post('/workflow-stages', {
+        const res = await api.post('/workflow-stages', {
           name: internalName,
           label: stageLabel,
           color: stageColor,
           type: stageType
         });
-        toast.success('New workflow stage created');
+        savedStage = res.stage;
       }
-      
+
+      // Reorder based on placement choices
+      if (placementType !== 'current') {
+        const otherStages = stages.filter(s => s.id !== savedStage.id);
+
+        let targetIndex = otherStages.length; // Default to last (At End)
+        if (placementType === 'first') {
+          targetIndex = 0;
+        } else if (placementType === 'after' && placementAfterStageId !== '') {
+          const idx = otherStages.findIndex(s => s.id === Number(placementAfterStageId));
+          if (idx !== -1) {
+            targetIndex = idx + 1;
+          }
+        }
+
+        const reordered = [...otherStages];
+        reordered.splice(targetIndex, 0, savedStage);
+
+        const finalOrders = reordered.map((stage, idx) => ({
+          id: stage.id,
+          position: idx
+        }));
+
+        await api.put('/workflow-stages/reorder', { orders: finalOrders });
+      }
+
+      toast.success(editingStage ? 'Workflow stage updated' : 'New workflow stage created');
       setStageLabel('');
       setStageColor(PRESET_COLORS[0]);
       setStageType('active');
       setEditingStage(null);
+      setPlacementType('last');
+      setPlacementAfterStageId('');
       setShowAddStageModal(false);
       loadStages();
     } catch (err: any) {
@@ -256,46 +300,40 @@ export default function SettingsView() {
     });
   };
 
-  // Swap stage positions
-  const handleMoveStage = async (index: number, direction: 'up' | 'down') => {
+  // Swap stage positions with debounced bulk update
+  const handleMoveStage = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= stages.length) return;
 
-    const currentStage = stages[index];
-    const adjacentStage = stages[targetIndex];
+    // Local swap
+    const updatedStages = [...stages];
+    const temp = updatedStages[index];
+    updatedStages[index] = updatedStages[targetIndex];
+    updatedStages[targetIndex] = temp;
 
-    try {
-      // Optimistic state swap
-      const updatedStages = [...stages];
-      updatedStages[index] = { ...currentStage, position: adjacentStage.position };
-      updatedStages[targetIndex] = { ...adjacentStage, position: currentStage.position };
-      // Sort immediately
-      updatedStages.sort((a, b) => a.position - b.position);
-      setStages(updatedStages);
+    // Reassign positions sequentially to clean them up
+    const reorderedStages = updatedStages.map((stage, idx) => ({
+      ...stage,
+      position: idx
+    }));
 
-      // Perform API updates
-      await api.put(`/workflow-stages/${currentStage.id}`, {
-        name: currentStage.name,
-        label: currentStage.label,
-        color: currentStage.color,
-        type: currentStage.type,
-        position: adjacentStage.position
-      });
+    setStages(reorderedStages);
 
-      await api.put(`/workflow-stages/${adjacentStage.id}`, {
-        name: adjacentStage.name,
-        label: adjacentStage.label,
-        color: adjacentStage.color,
-        type: adjacentStage.type,
-        position: currentStage.position
-      });
-
-      toast.success('Workflow stages reordered');
-      loadStages();
-    } catch (err: any) {
-      toast.error('Failed to update stage positions');
-      loadStages(); // Revert
+    // Debounce the backend update request
+    if (reorderTimeoutRef.current) {
+      clearTimeout(reorderTimeoutRef.current);
     }
+
+    reorderTimeoutRef.current = setTimeout(async () => {
+      try {
+        const orders = reorderedStages.map(s => ({ id: s.id, position: s.position }));
+        await api.put('/workflow-stages/reorder', { orders });
+        toast.success('Workflow stages reordered');
+      } catch (err: any) {
+        toast.error('Failed to update stage positions');
+        loadStages(); // Revert on failure
+      }
+    }, 800);
   };
 
   const copyToClipboard = (text: string) => {
@@ -462,9 +500,23 @@ export default function SettingsView() {
                         </td>
                         <td className="px-6 py-4">
                           {u.requires_password_change ? (
-                            <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                              <Lock className="h-3.5 w-3.5" /> Requires reset on login
-                            </span>
+                            <div className="space-y-1">
+                              <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+                                <Lock className="h-3.5 w-3.5" /> Requires reset on login
+                              </span>
+                              {u.temp_password && (
+                                <div className="flex items-center gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-lg w-fit border border-amber-500/20">
+                                  <span className="text-[10px] font-mono font-bold select-all">Temp: {u.temp_password}</span>
+                                  <button
+                                    onClick={() => copyToClipboard(u.temp_password || '')}
+                                    className="text-amber-600 hover:text-amber-800 dark:hover:text-amber-300 p-0.5 rounded transition-colors"
+                                    title="Copy temporary password"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-green-600 dark:text-green-400 font-semibold flex items-center gap-1">
                               <Check className="h-3.5 w-3.5" /> Password set / changed
@@ -514,6 +566,8 @@ export default function SettingsView() {
                 setStageLabel('');
                 setStageColor(PRESET_COLORS[0]);
                 setStageType('active');
+                setPlacementType('last');
+                setPlacementAfterStageId('');
                 setShowAddStageModal(true);
               }}
               className="bg-[#00236f] hover:bg-[#1e3a8a] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
@@ -597,6 +651,8 @@ export default function SettingsView() {
                         setStageLabel(stage.label);
                         setStageColor(stage.color);
                         setStageType(stage.type);
+                        setPlacementType('current');
+                        setPlacementAfterStageId('');
                         setShowAddStageModal(true);
                       }}
                       className="p-2 text-outline hover:text-[#00236f] dark:hover:text-[#3b82f6] rounded-lg hover:bg-[#f1f3ff] dark:hover:bg-gray-800 transition-colors"
@@ -627,7 +683,7 @@ export default function SettingsView() {
       {/* CREATE/EDIT USER MODAL */}
       {showAddUserModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+          <div className="w-[512px] max-w-full bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
               <div className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-primary dark:text-[#3b82f6]" />
@@ -715,7 +771,7 @@ export default function SettingsView() {
       {/* CREATE/EDIT STAGE MODAL */}
       {showAddStageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+          <div className="w-[512px] max-w-full bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
               <div className="flex items-center gap-2">
                 <Palette className="h-5 w-5 text-primary dark:text-[#3b82f6]" />
@@ -801,6 +857,88 @@ export default function SettingsView() {
                 </select>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold text-outline tracking-wider">
+                  Stage Position / Placement
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {editingStage && (
+                    <button
+                      type="button"
+                      onClick={() => setPlacementType('current')}
+                      className={cn(
+                        "px-3.5 py-2.5 border rounded-xl text-xs font-bold transition-all text-center",
+                        placementType === 'current'
+                          ? "bg-primary/10 border-primary text-primary dark:bg-[#3b82f6]/10 dark:border-[#3b82f6] dark:text-[#3b82f6]"
+                          : "border-outline-variant dark:border-[#334155] text-on-surface-variant dark:text-gray-400 hover:bg-[#f1f3ff] dark:hover:bg-gray-800"
+                      )}
+                    >
+                      Keep Current
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPlacementType('first')}
+                    className={cn(
+                      "px-3.5 py-2.5 border rounded-xl text-xs font-bold transition-all text-center",
+                      placementType === 'first'
+                        ? "bg-primary/10 border-primary text-primary dark:bg-[#3b82f6]/10 dark:border-[#3b82f6] dark:text-[#3b82f6]"
+                        : "border-outline-variant dark:border-[#334155] text-on-surface-variant dark:text-gray-400 hover:bg-[#f1f3ff] dark:hover:bg-gray-800"
+                    )}
+                  >
+                    At Beginning (First)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlacementType('last')}
+                    className={cn(
+                      "px-3.5 py-2.5 border rounded-xl text-xs font-bold transition-all text-center",
+                      placementType === 'last'
+                        ? "bg-primary/10 border-primary text-primary dark:bg-[#3b82f6]/10 dark:border-[#3b82f6] dark:text-[#3b82f6]"
+                        : "border-outline-variant dark:border-[#334155] text-on-surface-variant dark:text-gray-400 hover:bg-[#f1f3ff] dark:hover:bg-gray-800"
+                    )}
+                  >
+                    At End (Last)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlacementType('after');
+                      const otherStages = stages.filter(s => s.id !== (editingStage?.id ?? -1));
+                      if (otherStages.length > 0 && !placementAfterStageId) {
+                        setPlacementAfterStageId(otherStages[0].id);
+                      }
+                    }}
+                    className={cn(
+                      "px-3.5 py-2.5 border rounded-xl text-xs font-bold transition-all text-center",
+                      placementType === 'after'
+                        ? "bg-primary/10 border-primary text-primary dark:bg-[#3b82f6]/10 dark:border-[#3b82f6] dark:text-[#3b82f6]"
+                        : "border-outline-variant dark:border-[#334155] text-on-surface-variant dark:text-gray-400 hover:bg-[#f1f3ff] dark:hover:bg-gray-800"
+                    )}
+                  >
+                    After Stage...
+                  </button>
+                </div>
+
+                {placementType === 'after' && (
+                  <div className="pt-1.5">
+                    <select
+                      value={placementAfterStageId}
+                      onChange={(e) => setPlacementAfterStageId(Number(e.target.value))}
+                      className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer transition-all"
+                    >
+                      {stages
+                        .filter((s) => s.id !== (editingStage?.id ?? -1))
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            After {s.label}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
               {editingStage && (
                 <div className="p-3 bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40 rounded-xl text-[11px] text-amber-800 dark:text-amber-400">
                   Note: Renaming this stage will dynamically re-label all existing leads in the CRM database.
@@ -834,7 +972,7 @@ export default function SettingsView() {
       {/* PREMIUM CUSTOM CONFIRMATION MODAL */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+          <div className="w-[448px] max-w-full bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
               <div className="flex items-center gap-2 text-destructive dark:text-red-400">
                 <AlertCircle className="h-5 w-5" />

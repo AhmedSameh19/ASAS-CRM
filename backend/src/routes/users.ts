@@ -37,7 +37,7 @@ users.get('/', async (c) => {
   const db = getDb(c.env.DATABASE_URL)
   try {
     const res = await db.query(
-      'SELECT id, email, name, role, requires_password_change, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, name, role, requires_password_change, temp_password, created_at FROM users ORDER BY created_at DESC'
     )
     return c.json({ users: res.rows })
   } catch (error: any) {
@@ -74,10 +74,10 @@ users.post('/', async (c) => {
 
     const hashedPassword = await bcrypt.hash(tempPassword, 10)
     const res = await db.query(
-      `INSERT INTO users (email, password, name, role, requires_password_change) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING id, email, name, role, requires_password_change, created_at`,
-      [email.toLowerCase(), hashedPassword, name, role, true]
+      `INSERT INTO users (email, password, name, role, requires_password_change, temp_password) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, email, name, role, requires_password_change, temp_password, created_at`,
+      [email.toLowerCase(), hashedPassword, name, role, true, tempPassword]
     )
 
     return c.json({

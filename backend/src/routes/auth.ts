@@ -113,7 +113,7 @@ auth.post('/change-password', authMiddleware, async (c) => {
   try {
     const hashedPassword = await bcrypt.hash(newPassword, 10)
     await db.query(
-      'UPDATE users SET password = $1, requires_password_change = false WHERE id = $2',
+      'UPDATE users SET password = $1, requires_password_change = false, temp_password = NULL WHERE id = $2',
       [hashedPassword, userPayload.id]
     )
     

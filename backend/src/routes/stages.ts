@@ -74,6 +74,29 @@ stages.post('/', async (c) => {
   }
 })
 
+// PUT /api/workflow-stages/reorder - Bulk reorder stages
+stages.put('/reorder', async (c) => {
+  const isAdmin = await checkAdmin(c)
+  if (!isAdmin) {
+    return c.json({ error: 'Forbidden: Admins only' }, 403)
+  }
+
+  const { orders } = await c.req.json() as { orders: { id: number; position: number }[] }
+  if (!orders || !Array.isArray(orders)) {
+    return c.json({ error: 'orders must be an array of { id, position }' }, 400)
+  }
+
+  const db = getDb(c.env.DATABASE_URL)
+  try {
+    for (const item of orders) {
+      await db.query('UPDATE workflow_stages SET position = $1 WHERE id = $2', [item.position, item.id])
+    }
+    return c.json({ message: 'Stages reordered successfully' })
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
 // PUT /api/workflow-stages/:id - Update a stage
 stages.put('/:id', async (c) => {
   const isAdmin = await checkAdmin(c)

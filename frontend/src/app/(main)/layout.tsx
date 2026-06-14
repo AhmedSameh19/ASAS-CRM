@@ -68,7 +68,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (user.requires_password_change) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#F3F4F6] dark:bg-[#020817] p-4">
-        <div className="w-full max-w-md bg-white dark:bg-[#0b1120] border border-[#E5E7EB] dark:border-[#1e293b] rounded-2xl p-6 md:p-8 shadow-xl space-y-6 animate-in fade-in duration-200">
+        <div className="w-[448px] max-w-full bg-white dark:bg-[#0b1120] border border-[#E5E7EB] dark:border-[#1e293b] rounded-2xl p-6 md:p-8 shadow-xl space-y-6">
           <div className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400">
               <Lock className="h-6 w-6 animate-pulse" />

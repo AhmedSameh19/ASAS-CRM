@@ -26,7 +26,8 @@ async function runMigration() {
     await client.query(`
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'user',
-      ADD COLUMN IF NOT EXISTS requires_password_change BOOLEAN DEFAULT FALSE;
+      ADD COLUMN IF NOT EXISTS requires_password_change BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS temp_password VARCHAR(255);
     `);
     console.log('✓ Users table columns added (if they did not exist).');
 
