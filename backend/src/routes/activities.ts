@@ -46,7 +46,8 @@ activities.get('/', async (c) => {
       }
     })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[activities] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -76,7 +77,8 @@ activities.post('/', async (c) => {
     const result = await db.query(query, values)
     return c.json({ activity: result.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[activities] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -111,7 +113,8 @@ activities.put('/:id', async (c) => {
     )
     return c.json({ activity: result.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[activities] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -136,7 +139,8 @@ activities.delete('/:id', async (c) => {
     await db.query('DELETE FROM activities WHERE id = $1', [id])
     return c.json({ success: true })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[activities] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 

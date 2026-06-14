@@ -40,7 +40,8 @@ users.get('/', async (c) => {
     )
     return c.json({ users: res.rows })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[users/list] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -55,13 +56,16 @@ users.post('/', async (c) => {
   if (!email || !name) {
     return c.json({ error: 'Email and Name are required' }, 400)
   }
-
-  // Generate random password
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
-  let tempPassword = ''
-  for (let i = 0; i < 12; i++) {
-    tempPassword += chars.charAt(Math.floor(Math.random() * chars.length))
+  if (!['user', 'admin'].includes(role)) {
+    return c.json({ error: 'Invalid role. Must be "user" or "admin"' }, 400)
   }
+
+  // Generate cryptographically secure random password
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+  const randomBytes = new Uint32Array(12)
+  crypto.getRandomValues(randomBytes)
+  const tempPassword = Array.from(randomBytes).map(n => chars[n % chars.length]).join('')
+
 
   const db = c.get('db')
   try {
@@ -85,7 +89,8 @@ users.post('/', async (c) => {
       tempPassword // Return plain text password for admin to copy
     }, 201)
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[users/create] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -142,7 +147,8 @@ users.put('/profile', async (c) => {
       user: updateRes.rows[0]
     })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[users/profile] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -174,7 +180,8 @@ users.delete('/:id', async (c) => {
 
     return c.json({ message: 'User deleted successfully', deletedUser: deleteRes.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[users/delete] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 

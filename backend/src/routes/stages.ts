@@ -32,7 +32,8 @@ stages.get('/', async (c) => {
     const res = await db.query('SELECT * FROM workflow_stages ORDER BY position ASC')
     return c.json({ stages: res.rows })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[stages] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -69,7 +70,8 @@ stages.post('/', async (c) => {
 
     return c.json({ stage: res.rows[0] }, 201)
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[stages] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -92,7 +94,8 @@ stages.put('/reorder', async (c) => {
     }
     return c.json({ message: 'Stages reordered successfully' })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[stages] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -142,7 +145,8 @@ stages.put('/:id', async (c) => {
 
     return c.json({ stage: res.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[stages] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -190,7 +194,8 @@ stages.delete('/:id', async (c) => {
 
     return c.json({ message: 'Stage deleted successfully', deletedStageName: deletedName })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[stages] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 

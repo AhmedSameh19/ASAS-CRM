@@ -54,7 +54,8 @@ documents.post('/', async (c) => {
 
     return c.json({ document: result.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[documents] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -67,7 +68,8 @@ documents.get('/', async (c) => {
     const result = await db.query('SELECT * FROM documents WHERE prospect_id = $1 ORDER BY uploaded_at DESC', [prospect_id])
     return c.json({ documents: result.rows })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[documents] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -92,7 +94,8 @@ documentOperations.get('/:id/download', async (c) => {
     const fileUrl = `${origin}/api/documents/${id}/file${token ? `?token=${encodeURIComponent(token)}` : ''}`
     return c.json({ url: fileUrl, file_name: doc.file_name })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[documents] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -119,7 +122,8 @@ documentOperations.get('/:id/file', async (c) => {
     const publicUrl = `${c.env.R2_PUBLIC_URL}/${doc.file_key}`
     return c.redirect(publicUrl)
   } catch (error: any) {
-    return c.text(error.message, 500)
+    console.error('[documents/file] error:', error)
+    return c.text('An internal server error occurred', 500)
   }
 })
 
@@ -146,7 +150,8 @@ documentOperations.delete('/:id', async (c) => {
 
     return c.json({ success: true })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[documents] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 

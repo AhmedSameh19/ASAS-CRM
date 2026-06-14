@@ -174,7 +174,8 @@ analytics.get('/', async (c) => {
       topPerformers: topPerformersRes.rows
     })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[analytics] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 

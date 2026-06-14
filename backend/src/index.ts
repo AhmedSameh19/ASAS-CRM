@@ -58,7 +58,7 @@ app.get('/health', async (c) => {
     return c.json({
       status: 'unhealthy',
       database: 'disconnected',
-      error: error.message,
+      error: 'Database connection failed',
       timestamp: new Date().toISOString()
     }, 500)
   }
@@ -78,15 +78,26 @@ const nestedActivities = new Hono<{ Bindings: Bindings; Variables: { db: any; jw
 nestedActivities.use('*', authMiddleware)
 nestedActivities.get('/:id/activities', async (c) => {
   const db = c.get('db')
+  const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
   try {
+    // Ownership check: verify the prospect belongs to the requesting user
+    const ownerCheck = await db.query(
+      'SELECT id FROM prospects WHERE id = $1 AND assigned_to = $2',
+      [id, user.id]
+    )
+    if (ownerCheck.rowCount === 0) {
+      return c.json({ error: 'Not found or unauthorized' }, 404)
+    }
+
     const activitiesRes = await db.query(
       'SELECT * FROM activities WHERE prospect_id = $1 ORDER BY activity_date DESC',
       [id]
     )
     return c.json({ activities: activitiesRes.rows })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[activities] nested error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 nestedActivities.route('/:id/documents', documents)

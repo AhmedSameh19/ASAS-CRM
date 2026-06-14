@@ -78,7 +78,8 @@ prospects.get('/', async (c) => {
       limit
     })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[prospects] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -102,7 +103,8 @@ prospects.get('/:id', async (c) => {
       documents: documentsRes.rows
     })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[prospects] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -142,7 +144,8 @@ prospects.post('/', async (c) => {
     const result = await db.query(query, values)
     return c.json({ prospect: result.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[prospects] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -171,7 +174,8 @@ prospects.put('/:id', async (c) => {
     )
     return c.json({ prospect: result.rows[0] })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[prospects] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -187,7 +191,8 @@ prospects.delete('/:id', async (c) => {
     if (result.rowCount === 0) return c.json({ error: 'Not found or unauthorized' }, 404)
     return c.json({ success: true })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[prospects] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 

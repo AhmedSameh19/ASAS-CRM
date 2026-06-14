@@ -2,18 +2,28 @@ import { Hono } from 'hono'
 import { sign } from 'hono/jwt'
 import * as bcrypt from 'bcryptjs'
 import { authMiddleware } from '../middleware/auth'
+import { checkLoginRateLimit, recordFailedAttempt, clearAttempts } from '../middleware/rateLimit'
 
 type Bindings = {
   DATABASE_URL: string
   JWT_SECRET: string
 }
 
-
-
 const auth = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 
 auth.post('/login', async (c) => {
   const { email, password } = await c.req.json()
+
+  // ── Rate limit check (per email address) ──────────────────────────────────
+  const rateLimitKey = (email as string).toLowerCase().trim()
+  const rateCheck = checkLoginRateLimit(rateLimitKey)
+  if (rateCheck.blocked) {
+    return c.json(
+      { error: `Too many failed login attempts. Please try again in ${rateCheck.retryAfter} seconds.` },
+      429
+    )
+  }
+
   const db = c.get('db')
 
   try {
@@ -22,14 +32,19 @@ auth.post('/login', async (c) => {
 
     // 1. Check if the user exists
     if (!user) {
+      recordFailedAttempt(rateLimitKey)
       return c.json({ error: 'Invalid credentials' }, 401)
     }
 
     // 2. Verify the password
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
+      recordFailedAttempt(rateLimitKey)
       return c.json({ error: 'Invalid credentials' }, 401)
     }
+
+    // Successful login — reset the counter
+    clearAttempts(rateLimitKey)
 
     // 3. Generate JWT
     const payload = {
@@ -54,8 +69,8 @@ auth.post('/login', async (c) => {
       }
     })
   } catch (error: any) {
-    console.error('Login error:', error)
-    return c.json({ error: 'Internal server error' }, 500)
+    console.error('[auth/login] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -81,8 +96,9 @@ auth.get('/me', authMiddleware, async (c) => {
       role: dbUser.role,
       requires_password_change: dbUser.requires_password_change
     })
-  } catch (err: any) {
-    return c.json({ error: err.message }, 500)
+  } catch (error: any) {
+    console.error('[auth/me] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
@@ -132,7 +148,8 @@ auth.post('/change-password', authMiddleware, async (c) => {
       }
     })
   } catch (error: any) {
-    return c.json({ error: error.message }, 500)
+    console.error('[auth/change-password] error:', error)
+    return c.json({ error: 'An internal server error occurred' }, 500)
   }
 })
 
