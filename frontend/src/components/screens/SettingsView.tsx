@@ -745,7 +745,7 @@ export default function SettingsView() {
       {/* CREATE/EDIT USER MODAL */}
       {showAddUserModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-[512px] max-w-full bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+          <div className="w-[512px] max-w-full max-h-[90dvh] bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
               <div className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-primary dark:text-[#3b82f6]" />
@@ -759,7 +759,7 @@ export default function SettingsView() {
               </button>
             </div>
 
-            <form onSubmit={handleAddUser} className="p-6 space-y-5">
+            <form onSubmit={handleAddUser} className="p-6 space-y-5 overflow-y-auto">
               <p className="text-xs text-on-surface-variant dark:text-gray-400">
                 Register a new CRM operator. A strong, random temporary password will be auto-generated and shown for you to copy. The user will be required to update their password upon first login.
               </p>
@@ -833,7 +833,7 @@ export default function SettingsView() {
       {/* CREATE/EDIT STAGE MODAL */}
       {showAddStageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-[512px] max-w-full bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+          <div className="w-[512px] max-w-full max-h-[90dvh] bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
               <div className="flex items-center gap-2">
                 <Palette className="h-5 w-5 text-primary dark:text-[#3b82f6]" />
@@ -852,7 +852,7 @@ export default function SettingsView() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveStage} className="p-6 space-y-5">
+            <form onSubmit={handleSaveStage} className="p-6 space-y-5 overflow-y-auto">
               <p className="text-xs text-on-surface-variant dark:text-gray-400">
                 {editingStage 
                   ? 'Update the settings for this workflow stage. Renaming will modify the status tags of existing leads.' 
