@@ -83,6 +83,23 @@ export default function SettingsView() {
   const [stageType, setStageType] = useState<'active' | 'won' | 'lost'>('active');
   const [saveStageLoading, setSaveStageLoading] = useState(false);
 
+  // Custom Confirmation Modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    isDestructive?: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    confirmText: 'Confirm',
+    isDestructive: false
+  });
+
   // Load users
   const loadUsers = useCallback(async () => {
     try {
@@ -148,18 +165,23 @@ export default function SettingsView() {
   };
 
   // Delete user handler
-  const handleDeleteUser = async (userId: number) => {
-    if (!window.confirm('Are you sure you want to delete this user? All their assigned leads and activity records will be set to unassigned.')) {
-      return;
-    }
-
-    try {
-      await api.delete(`/users/${userId}`);
-      toast.success('User deleted successfully');
-      loadUsers();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete user');
-    }
+  const handleDeleteUser = (userId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete User Account',
+      message: 'Are you sure you want to permanently delete this user account? All their assigned leads and activity records will be set to unassigned.',
+      confirmText: 'Delete User',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/users/${userId}`);
+          toast.success('User deleted successfully');
+          loadUsers();
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to delete user');
+        }
+      }
+    });
   };
 
   // Create or update stage
@@ -210,23 +232,28 @@ export default function SettingsView() {
   };
 
   // Delete stage handler
-  const handleDeleteStage = async (stageId: number, stageName: string) => {
+  const handleDeleteStage = (stageId: number, stageName: string) => {
     if (stages.length <= 1) {
       toast.error('You must keep at least one workflow stage');
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to delete stage "${stageName}"? Any prospects currently in this stage will be migrated to the first available stage.`)) {
-      return;
-    }
-
-    try {
-      await api.delete(`/workflow-stages/${stageId}`);
-      toast.success('Workflow stage deleted');
-      loadStages();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete workflow stage');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Workflow Stage',
+      message: `Are you sure you want to delete stage "${stageName}"? Any prospects currently in this stage will be migrated to the first available stage.`,
+      confirmText: 'Delete Stage',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/workflow-stages/${stageId}`);
+          toast.success('Workflow stage deleted');
+          loadStages();
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to delete workflow stage');
+        }
+      }
+    });
   };
 
   // Swap stage positions
@@ -600,9 +627,12 @@ export default function SettingsView() {
       {/* CREATE/EDIT USER MODAL */}
       {showAddUserModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
-            <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between">
-              <h3 className="font-headline-md text-base font-bold text-on-surface dark:text-white">Create New CRM User</h3>
+          <div className="w-full max-w-lg bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+            <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-primary dark:text-[#3b82f6]" />
+                <h3 className="font-headline-md text-base font-bold text-on-surface dark:text-white">Create New CRM User</h3>
+              </div>
               <button
                 onClick={() => setShowAddUserModal(false)}
                 className="text-outline hover:text-on-surface dark:hover:text-white p-1 rounded hover:bg-surface-container dark:hover:bg-gray-800 transition-colors"
@@ -611,7 +641,11 @@ export default function SettingsView() {
               </button>
             </div>
 
-            <form onSubmit={handleAddUser} className="p-6 space-y-4">
+            <form onSubmit={handleAddUser} className="p-6 space-y-5">
+              <p className="text-xs text-on-surface-variant dark:text-gray-400">
+                Register a new CRM operator. A strong, random temporary password will be auto-generated and shown for you to copy. The user will be required to update their password upon first login.
+              </p>
+
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="user-name">
                   Full Name
@@ -619,10 +653,10 @@ export default function SettingsView() {
                 <input
                   id="user-name"
                   type="text"
-                  placeholder="Enter full name"
+                  placeholder="e.g. John Doe"
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
-                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
                   required
                 />
               </div>
@@ -634,26 +668,26 @@ export default function SettingsView() {
                 <input
                   id="user-email"
                   type="email"
-                  placeholder="Enter email address"
+                  placeholder="e.g. name@company.com"
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
-                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="user-role">
-                  System Role
+                  System Role / Permissions
                 </label>
                 <select
                   id="user-role"
                   value={newUserRole}
                   onChange={(e) => setNewUserRole(e.target.value)}
-                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer transition-all"
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer transition-all"
                 >
-                  <option value="user">User (Standard Agent)</option>
-                  <option value="admin">Admin (System Manager)</option>
+                  <option value="user">User (Standard Sales Agent)</option>
+                  <option value="admin">Admin (System Administrator)</option>
                 </select>
               </div>
 
@@ -661,14 +695,14 @@ export default function SettingsView() {
                 <button
                   type="button"
                   onClick={() => setShowAddUserModal(false)}
-                  className="px-4 py-2 border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 text-on-surface-variant dark:text-gray-300 font-bold rounded-xl text-xs transition-all"
+                  className="px-4 py-2.5 border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 text-on-surface-variant dark:text-gray-300 font-bold rounded-xl text-xs transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addUserLoading}
-                  className="px-4 py-2 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   {addUserLoading ? 'Generating...' : 'Create Account'}
                 </button>
@@ -681,23 +715,32 @@ export default function SettingsView() {
       {/* CREATE/EDIT STAGE MODAL */}
       {showAddStageModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
-            <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between">
-              <h3 className="font-headline-md text-base font-bold text-on-surface dark:text-white">
-                {editingStage ? 'Edit Workflow Stage' : 'Create Workflow Stage'}
-              </h3>
+          <div className="w-full max-w-lg bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+            <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
+              <div className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary dark:text-[#3b82f6]" />
+                <h3 className="font-headline-md text-base font-bold text-on-surface dark:text-white">
+                  {editingStage ? 'Edit Workflow Stage' : 'Create Workflow Stage'}
+                </h3>
+              </div>
               <button
                 onClick={() => {
                   setEditingStage(null);
                   setShowAddStageModal(false);
                 }}
-                className="text-outline hover:text-on-surface dark:hover:text-white p-1 rounded hover:bg-surface-container dark:hover:bg-gray-800 transition-colors"
+                className="text-outline hover:text-on-surface dark:hover:text-white p-1.5 rounded hover:bg-surface-container dark:hover:bg-gray-800 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveStage} className="p-6 space-y-4">
+            <form onSubmit={handleSaveStage} className="p-6 space-y-5">
+              <p className="text-xs text-on-surface-variant dark:text-gray-400">
+                {editingStage 
+                  ? 'Update the settings for this workflow stage. Renaming will modify the status tags of existing leads.' 
+                  : 'Define a new sales column. It will immediately appear on the Sales Pipeline Board and the Analytics reports.'}
+              </p>
+
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="stage-label">
                   Stage Label
@@ -708,29 +751,34 @@ export default function SettingsView() {
                   placeholder="e.g. Demonstration Done"
                   value={stageLabel}
                   onChange={(e) => setStageLabel(e.target.value)}
-                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
                   required
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                  Color Token Color
-                </label>
-                <div className="grid grid-cols-6 gap-2 bg-[#f9f9ff] dark:bg-[#1e293b] p-3 rounded-xl border border-outline-variant dark:border-[#334155]">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] uppercase font-bold text-outline tracking-wider">
+                    Stage Color Theme
+                  </label>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant dark:bg-gray-800 dark:text-gray-300">
+                    {stageColor}
+                  </span>
+                </div>
+                <div className="grid grid-cols-6 gap-3 bg-[#f9f9ff] dark:bg-[#1e293b] p-4 rounded-xl border border-outline-variant dark:border-[#334155]">
                   {PRESET_COLORS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setStageColor(c)}
                       className={cn(
-                        "w-7 h-7 rounded-full border border-black/10 transition-transform relative",
-                        stageColor === c ? "scale-110 ring-2 ring-primary dark:ring-white" : "hover:scale-105"
+                        "w-9 h-9 rounded-full border border-black/10 transition-all duration-200 relative flex items-center justify-center shadow-sm hover:scale-105 active:scale-95",
+                        stageColor === c ? "scale-110 ring-2 ring-primary dark:ring-white shadow-md" : ""
                       )}
                       style={{ backgroundColor: c }}
                     >
                       {stageColor === c && (
-                        <Check className="h-3 w-3 text-white absolute inset-0 m-auto filter drop-shadow-md" />
+                        <Check className="h-4 w-4 text-white filter drop-shadow" />
                       )}
                     </button>
                   ))}
@@ -739,22 +787,22 @@ export default function SettingsView() {
 
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="stage-type">
-                  Stage Funnel Type
+                  Stage Funnel Category
                 </label>
                 <select
                   id="stage-type"
                   value={stageType}
                   onChange={(e) => setStageType(e.target.value as any)}
-                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer transition-all"
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer transition-all"
                 >
-                  <option value="active">Active (Ongoing negotiation)</option>
-                  <option value="won">Won (Successfully closed deal)</option>
-                  <option value="lost">Lost (Unsuccessful outcome)</option>
+                  <option value="active">Active (Ongoing Leads / Negotiations)</option>
+                  <option value="won">Won (Successfully Converted / Closed Won)</option>
+                  <option value="lost">Lost (Dropped / Closed Lost)</option>
                 </select>
               </div>
 
               {editingStage && (
-                <div className="p-2.5 bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40 rounded-lg text-[11px] text-amber-800 dark:text-amber-400">
+                <div className="p-3 bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40 rounded-xl text-[11px] text-amber-800 dark:text-amber-400">
                   Note: Renaming this stage will dynamically re-label all existing leads in the CRM database.
                 </div>
               )}
@@ -766,19 +814,72 @@ export default function SettingsView() {
                     setEditingStage(null);
                     setShowAddStageModal(false);
                   }}
-                  className="px-4 py-2 border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 text-on-surface-variant dark:text-gray-300 font-bold rounded-xl text-xs transition-all"
+                  className="px-4 py-2.5 border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 text-on-surface-variant dark:text-gray-300 font-bold rounded-xl text-xs transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saveStageLoading}
-                  className="px-4 py-2 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   {saveStageLoading ? 'Saving...' : 'Save Stage'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PREMIUM CUSTOM CONFIRMATION MODAL */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-[#0b1120] border border-outline-variant dark:border-[#1e293b] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+            <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] flex items-center justify-between bg-surface-container-low dark:bg-gray-900/40">
+              <div className="flex items-center gap-2 text-destructive dark:text-red-400">
+                <AlertCircle className="h-5 w-5" />
+                <h3 className="font-headline-md text-base font-bold text-on-surface dark:text-white">
+                  {confirmModal.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="text-outline hover:text-on-surface dark:hover:text-white p-1 rounded hover:bg-surface-container dark:hover:bg-gray-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-on-surface-variant dark:text-gray-300 leading-relaxed">
+                {confirmModal.message}
+              </p>
+
+              <div className="pt-4 border-t border-outline-variant dark:border-[#1e293b] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 border border-outline-variant dark:border-[#1e293b] hover:bg-surface-container dark:hover:bg-gray-800 text-on-surface-variant dark:text-gray-300 font-bold rounded-xl text-xs transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    confirmModal.onConfirm();
+                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                  }}
+                  className={cn(
+                    "px-4 py-2 font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95",
+                    confirmModal.isDestructive 
+                      ? "bg-red-600 hover:bg-red-700 text-white" 
+                      : "bg-[#00236f] hover:bg-[#1e3a8a] text-white"
+                  )}
+                >
+                  {confirmModal.confirmText || 'Confirm'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
