@@ -317,8 +317,7 @@ export default function SettingsView() {
       toast.success('Profile updated successfully');
       
       // Update auth store with new user info
-      localStorage.setItem('user', JSON.stringify(data.user));
-      useAuthStore.setState({ user: data.user });
+      useAuthStore.getState().setUser(data.user);
       
       // Clear password fields
       setProfileCurrentPassword('');
@@ -412,13 +411,13 @@ export default function SettingsView() {
       </div>
 
       {/* Tabs Selector */}
-      <div className="flex border-b border-outline-variant dark:border-[#1e293b]">
+      <div className="flex border-b border-outline-variant dark:border-[#1e293b] overflow-x-auto scrollbar-none -mx-1 px-1">
         {currentUser?.role === 'admin' && (
           <>
             <button
               onClick={() => setActiveTab('users')}
               className={cn(
-                'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
+                'px-3 sm:px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap',
                 activeTab === 'users'
                   ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
                   : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
@@ -430,7 +429,7 @@ export default function SettingsView() {
             <button
               onClick={() => setActiveTab('stages')}
               className={cn(
-                'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
+                'px-3 sm:px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap',
                 activeTab === 'stages'
                   ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
                   : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
@@ -444,7 +443,7 @@ export default function SettingsView() {
         <button
           onClick={() => setActiveTab('profile')}
           className={cn(
-            'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
+            'px-3 sm:px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap',
             activeTab === 'profile'
               ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
               : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
@@ -459,14 +458,14 @@ export default function SettingsView() {
       {activeTab === 'users' && (
         <div className="space-y-md">
           {/* Action Row */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-lg font-bold text-on-surface dark:text-white">CRM User Directory</h2>
             <button
               onClick={() => {
                 setCreatedUserInfo(null);
                 setShowAddUserModal(true);
               }}
-              className="bg-[#00236f] hover:bg-[#1e3a8a] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              className="w-full sm:w-auto bg-[#00236f] hover:bg-[#1e3a8a] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
             >
               <UserPlus className="h-4 w-4" />
               <span>Create User</span>
@@ -620,7 +619,7 @@ export default function SettingsView() {
       {activeTab === 'stages' && (
         <div className="space-y-md">
           {/* Action Row */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <h2 className="text-lg font-bold text-on-surface dark:text-white">Pipeline Stages Configuration</h2>
             <button
               onClick={() => {
@@ -632,7 +631,7 @@ export default function SettingsView() {
                 setPlacementAfterStageId('');
                 setShowAddStageModal(true);
               }}
-              className="bg-[#00236f] hover:bg-[#1e3a8a] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              className="w-full sm:w-auto bg-[#00236f] hover:bg-[#1e3a8a] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
             >
               <Plus className="h-4 w-4" />
               <span>Create Stage</span>
@@ -694,13 +693,14 @@ export default function SettingsView() {
                     {/* Label & Details */}
                     <div className="min-w-0">
                       <p className="font-bold text-sm text-on-surface dark:text-white truncate">{stage.label}</p>
-                      <p className="text-[10px] text-outline uppercase tracking-wider font-semibold mt-0.5">
-                        Internal ID: <span className="font-mono">{stage.name}</span> | Type: 
+                      <p className="text-[10px] text-outline uppercase tracking-wider font-semibold mt-0.5 flex flex-wrap gap-x-1.5 gap-y-0.5">
+                        <span className="font-mono">ID: {stage.name}</span>
+                        <span className="opacity-40">·</span>
                         <span className={cn(
-                          "ml-1 font-bold",
+                          "font-bold",
                           stage.type === 'won' ? "text-green-600 dark:text-green-400" :
                           stage.type === 'lost' ? "text-red-600 dark:text-red-400" : "text-primary dark:text-[#3b82f6]"
-                        )}> {stage.type}</span>
+                        )}>{stage.type}</span>
                       </p>
                     </div>
                   </div>
@@ -1126,7 +1126,7 @@ export default function SettingsView() {
               <button
                 type="submit"
                 disabled={profileLoading}
-                className="px-5 py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
               >
                 {profileLoading ? 'Saving changes...' : 'Save Settings'}
               </button>

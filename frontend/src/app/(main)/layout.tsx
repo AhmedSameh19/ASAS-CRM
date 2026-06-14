@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, login, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
@@ -37,7 +37,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout', {});
+    } catch {
+      // ignore — clear local state regardless
+    }
     logout();
     router.push('/login');
   };
@@ -56,7 +61,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       setResetLoading(true);
       const res = await api.post('/auth/change-password', { newPassword });
       toast.success('Password changed successfully');
-      login(res.user, res.token);
+      setUser(res.user);
     } catch (err: any) {
       toast.error(err.message || 'Failed to update password');
     } finally {

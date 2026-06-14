@@ -10,22 +10,28 @@ export interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
-  login: (user: User, token: string) => void;
+  setUser: (user: User | null) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null,
-  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
-  login: (user, token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    set({ user, token });
+  // User profile (non-sensitive) is still stored in localStorage for instant UI on refresh.
+  // The JWT itself lives only in an HttpOnly cookie — never readable by JavaScript.
+  user: typeof window !== 'undefined'
+    ? JSON.parse(localStorage.getItem('user') || 'null')
+    : null,
+
+  setUser: (user) => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+    set({ user });
   },
+
   logout: () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
-    set({ user: null, token: null });
+    set({ user: null });
   },
 }))

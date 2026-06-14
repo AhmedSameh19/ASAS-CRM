@@ -6,15 +6,16 @@ import { useAuthStore } from '@/store';
 
 export default function Home() {
   const router = useRouter();
-  const token = useAuthStore((state) => state.token);
+  // The JWT is now in an HttpOnly cookie — we redirect based on the cached user profile.
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
-    if (token) {
+    if (user) {
       router.push('/dashboard');
     } else {
       router.push('/login');
     }
-  }, [token, router]);
+  }, [user, router]);
 
   return (
     <div className="flex h-screen items-center justify-center">

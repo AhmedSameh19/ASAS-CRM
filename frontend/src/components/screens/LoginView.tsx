@@ -14,7 +14,7 @@ export default function LoginView() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const login = useAuthStore((state) => state.login);
+  const setUser = useAuthStore((state) => state.setUser);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +27,7 @@ export default function LoginView() {
     try {
       setLoading(true);
       const data = await api.post('/auth/login', { email, password });
-      login(data.user, data.token);
+      setUser(data.user);
       toast.success('Successfully logged in to management workspace');
       router.push('/dashboard');
     } catch (err: any) {
