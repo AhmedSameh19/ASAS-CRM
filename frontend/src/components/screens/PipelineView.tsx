@@ -36,17 +36,12 @@ interface Prospect {
   expected_close_date?: string | null;
 }
 
-const STAGES = [
-  { id: 'New Lead', label: 'New Lead', color: '#757682', lightBg: 'bg-[#757682]/10', borderCol: 'border-[#757682]' },
-  { id: 'MR Scheduled', label: 'MR Scheduled', color: '#00236f', lightBg: 'bg-[#00236f]/10', borderCol: 'border-[#00236f]' },
-  { id: 'MR Completed', label: 'MR Completed', color: '#4059aa', lightBg: 'bg-[#4059aa]/10', borderCol: 'border-[#4059aa]' },
-  { id: 'Demo Scheduled', label: 'Demo Scheduled', color: '#855300', lightBg: 'bg-[#855300]/10', borderCol: 'border-[#855300]' },
-  { id: 'Demo Done', label: 'Demo Done', color: '#fea619', lightBg: 'bg-[#fea619]/10', borderCol: 'border-[#fea619]' },
-  { id: 'Proposal Sent', label: 'Proposal Sent', color: '#6e2c00', lightBg: 'bg-[#6e2c00]/10', borderCol: 'border-[#6e2c00]' },
-  { id: 'Negotiation', label: 'Negotiation', color: '#1e3a8a', lightBg: 'bg-[#1e3a8a]/10', borderCol: 'border-[#1e3a8a]' },
-  { id: 'Won', label: 'Won ✓', color: '#059669', lightBg: 'bg-[#059669]/10', borderCol: 'border-[#059669]' },
-  { id: 'Lost', label: 'Lost ✗', color: '#ba1a1a', lightBg: 'bg-[#ba1a1a]/10', borderCol: 'border-[#ba1a1a]' },
-];
+interface Stage {
+  id: string;
+  label: string;
+  color: string;
+  position: number;
+}
 
 function ProspectCard({ prospect, overlay = false }: { prospect: Prospect; overlay?: boolean }) {
   const router = useRouter();
@@ -136,7 +131,7 @@ function KanbanColumn({
   prospects,
   isActiveMobile,
 }: {
-  stage: (typeof STAGES)[0];
+  stage: Stage;
   prospects: Prospect[];
   isActiveMobile: boolean;
 }) {
@@ -152,7 +147,8 @@ function KanbanColumn({
     )}>
       {/* Column header */}
       <div
-        className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg border-l-[3px] bg-surface-container-low dark:bg-gray-900/60 ${stage.borderCol}`}
+        className="flex items-center justify-between mb-3 px-3 py-2 rounded-lg border-l-[3px] bg-surface-container-low dark:bg-gray-900/60"
+        style={{ borderLeftColor: stage.color }}
       >
         <div className="flex flex-col min-w-0">
           <span className="text-xs font-bold uppercase tracking-wider text-on-surface dark:text-gray-300 truncate" style={{ color: stage.color }}>
@@ -198,29 +194,45 @@ function KanbanColumn({
 
 export default function PipelineView() {
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [stages, setStages] = useState<Stage[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeProspect, setActiveProspect] = useState<Prospect | null>(null);
-  const [activeStageId, setActiveStageId] = useState(STAGES[0].id);
+  const [activeStageId, setActiveStageId] = useState<string>('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const loadProspects = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await api.get('/prospects?limit=250');
-      setProspects(data.prospects || []);
+      
+      // Load stages
+      const stagesData = await api.get('/workflow-stages');
+      const mappedStages = (stagesData.stages || []).map((s: any) => ({
+        id: s.name,
+        label: s.label,
+        color: s.color,
+        position: s.position
+      }));
+      setStages(mappedStages);
+      if (mappedStages.length > 0) {
+        setActiveStageId(mappedStages[0].id);
+      }
+
+      // Load prospects
+      const prospectsData = await api.get('/prospects?limit=250');
+      setProspects(prospectsData.prospects || []);
     } catch {
-      toast.error('Failed to load sales pipeline prospects');
+      toast.error('Failed to load sales pipeline details');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadProspects();
-  }, [loadProspects]);
+    loadData();
+  }, [loadData]);
 
   const getProspectsByStage = (stageId: string) =>
     prospects.filter((p) => p.status === stageId);
@@ -274,8 +286,8 @@ export default function PipelineView() {
 
   const renderSkeletons = () => (
     <div className="flex gap-4 overflow-x-auto pb-4 flex-1">
-      {STAGES.slice(0, 4).map((stage) => (
-        <div key={stage.id} className="flex flex-col flex-shrink-0 w-[265px] space-y-3">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex flex-col flex-shrink-0 w-[265px] space-y-3">
           <div className="h-10 w-full bg-surface-container rounded-lg animate-pulse" />
           <div className="h-32 w-full bg-surface-container rounded-lg animate-pulse" />
           <div className="h-32 w-full bg-surface-container rounded-lg animate-pulse" />
@@ -312,7 +324,7 @@ export default function PipelineView() {
 
       {/* Mobile Stage Selector Tabs */}
       <div className="flex md:hidden gap-1.5 overflow-x-auto pb-3 flex-shrink-0 scrollbar-none select-none">
-        {STAGES.map((stage) => {
+        {stages.map((stage) => {
           const count = getProspectsByStage(stage.id).length;
           const isActive = activeStageId === stage.id;
           return (
@@ -349,7 +361,7 @@ export default function PipelineView() {
           onDragEnd={handleDragEnd}
         >
           <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-4 flex-grow select-none h-[calc(100vh-220px)] scrollbar-thin">
-            {STAGES.map((stage) => (
+            {stages.map((stage) => (
               <KanbanColumn
                 key={stage.id}
                 stage={stage}

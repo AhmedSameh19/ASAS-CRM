@@ -157,45 +157,36 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     });
   }; ``
 
-  // Define pipeline stages sequentially for conversion rate monitoring
-  const pipelineStages = [
-    { name: 'New Lead', label: 'New Lead' },
-    { name: 'MR Scheduled', label: 'MR Scheduled' },
-    { name: 'MR Completed', label: 'MR Completed' },
-    { name: 'Demo Scheduled', label: 'Demo Scheduled' },
-    { name: 'Demo Done', label: 'Demo Done' },
-    { name: 'Proposal Sent', label: 'Proposal Sent' },
-    { name: 'Negotiation', label: 'Negotiation' },
-    { name: 'Won', label: 'Won' },
-    { name: 'Lost', label: 'Lost' }
-  ];
-
   const getStageCount = (stageName: string) => {
     const val = data?.pipelineData?.find((p: any) => p.name === stageName)?.count;
     return val !== undefined ? Number(val) || 0 : 0;
   };
 
   const cumulativeCounts = (() => {
-    // 1. Calculate active cumulative counts (only active stages + Won)
-    const activeCumulative = pipelineStages.map((stage, idx) => {
+    if (!data?.pipelineData) return [];
+
+    // Calculate active cumulative counts (only active stages + Won)
+    const activeCumulative = data.pipelineData.map((stage: any, idx: number) => {
       let sum = 0;
-      for (let j = idx; j < pipelineStages.length; j++) {
-        if (pipelineStages[j].name !== 'Lost') {
-          sum += getStageCount(pipelineStages[j].name);
+      for (let j = idx; j < data.pipelineData.length; j++) {
+        if (data.pipelineData[j].type !== 'lost') {
+          sum += data.pipelineData[j].count;
         }
       }
       return sum;
     });
 
-    // 2. Distribute Lost leads cumulatively based on the active progression transition rates
-    const totalLostCount = getStageCount('Lost');
-    const lostCumulative = new Array(pipelineStages.length).fill(0);
+    // Distribute Lost leads cumulatively based on the active progression transition rates
+    const totalLostCount = data.pipelineData
+      .filter((s: any) => s.type === 'lost')
+      .reduce((acc: number, curr: any) => acc + curr.count, 0);
 
-    // All Lost leads started as New Leads
+    const lostCumulative = new Array(data.pipelineData.length).fill(0);
     lostCumulative[0] = totalLostCount;
 
-    for (let idx = 1; idx < pipelineStages.length; idx++) {
-      if (pipelineStages[idx].name === 'Lost' || pipelineStages[idx].name === 'Won') {
+    for (let idx = 1; idx < data.pipelineData.length; idx++) {
+      const currentStage = data.pipelineData[idx];
+      if (currentStage.type === 'lost' || currentStage.type === 'won') {
         lostCumulative[idx] = 0;
       } else {
         const prevActive = activeCumulative[idx - 1];
@@ -205,11 +196,11 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
       }
     }
 
-    // 3. Combine active cumulative and lost cumulative to get the true total cumulative count for each stage
-    return pipelineStages.map((stage, idx) => {
+    // Combine active cumulative and lost cumulative to get the true total cumulative count for each stage
+    return data.pipelineData.map((stage: any, idx: number) => {
       let sum = 0;
-      if (stage.name === 'Lost') {
-        sum = totalLostCount;
+      if (stage.type === 'lost') {
+        sum = stage.count;
       } else {
         sum = Math.round(activeCumulative[idx] + lostCumulative[idx]);
       }
@@ -220,7 +211,7 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     });
   })();
 
-  const conversionRates = cumulativeCounts.map((stage, idx) => {
+  const conversionRates = cumulativeCounts.map((stage: any, idx: number) => {
     if (idx === 0) {
       return {
         ...stage,
@@ -231,16 +222,16 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
     }
     const prevStage = cumulativeCounts[idx - 1];
 
-    // For both Won and Lost outcomes, their transition predecessor is Negotiation
+    // For both Won and Lost outcomes, their transition predecessor is the last active stage
     let prevCount = prevStage.count;
-    if (stage.name === 'Won' || stage.name === 'Lost') {
-      const negotiationStage = cumulativeCounts.find(s => s.name === 'Negotiation');
-      prevCount = negotiationStage ? negotiationStage.count : prevStage.count;
+    if (stage.type === 'won' || stage.type === 'lost') {
+      const lastActiveStage = cumulativeCounts.filter((s: any) => s.type === 'active').slice(-1)[0];
+      prevCount = lastActiveStage ? lastActiveStage.count : prevStage.count;
     }
 
     const stageToStageRate = prevCount > 0 ? (stage.count / prevCount) * 100 : 0;
     const overallRate = cumulativeCounts[0].count > 0 ? (stage.count / cumulativeCounts[0].count) * 100 : 0;
-    const dropoff = stage.name === 'Lost' ? 0 : 100 - stageToStageRate;
+    const dropoff = stage.type === 'lost' ? 0 : 100 - stageToStageRate;
 
     return {
       ...stage,
@@ -480,21 +471,15 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
             ) : conversionRates && conversionRates.length > 0 ? (
               <>
                 {conversionRates
-                  .filter((s) => s.name !== 'Won' && s.name !== 'Lost')
-                  .map((stage, idx, filteredArr) => {
-                    const colors = [
-                      'border-[#00236f] dark:border-[#3b82f6]',
-                      'border-[#4059aa] dark:border-[#60a5fa]',
-                      'border-[#855300] dark:border-[#fbbf24]',
-                      'border-[#fea619] dark:border-[#f59e0b]',
-                      'border-[#10b981] dark:border-[#10b981]'
-                    ];
-                    const activeColor = colors[idx % colors.length];
-
+                  .filter((s: any) => s.type === 'active')
+                  .map((stage: any, idx: number, filteredArr: any[]) => {
                     return (
                       <div key={stage.name} className="flex flex-col">
                         {/* Stage Card */}
-                        <div className={`p-2.5 bg-surface-container-low dark:bg-[#111827] border-l-4 ${activeColor} rounded-r-lg shadow-sm flex items-center justify-between`}>
+                        <div
+                          className="p-2.5 bg-surface-container-low dark:bg-[#111827] border-l-4 rounded-r-lg shadow-sm flex items-center justify-between"
+                          style={{ borderLeftColor: stage.color }}
+                        >
                           <div className="min-w-0">
                             <span className="font-semibold text-xs text-on-surface dark:text-gray-200 block truncate">
                               {stage.label}
@@ -541,8 +526,8 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
 
                 {/* Outcomes Branched Splitting Block (Won / Lost) */}
                 {(() => {
-                  const wonStage = conversionRates.find((s) => s.name === 'Won');
-                  const lostStage = conversionRates.find((s) => s.name === 'Lost');
+                  const wonStage = conversionRates.find((s: any) => s.type === 'won');
+                  const lostStage = conversionRates.find((s: any) => s.type === 'lost');
                   if (!wonStage || !lostStage) return null;
 
                   return (
@@ -560,7 +545,10 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
                       {/* Won & Lost Side-by-Side Cards */}
                       <div className="grid grid-cols-2 gap-3">
                         {/* Won Card */}
-                        <div className="p-2.5 bg-green-50/50 dark:bg-[#065f46]/10 border-l-4 border-[#10b981] dark:border-[#10b981] rounded-r-lg shadow-sm flex flex-col justify-between min-h-[70px]">
+                        <div
+                          className="p-2.5 bg-green-50/50 dark:bg-[#065f46]/10 border-l-4 rounded-r-lg shadow-sm flex flex-col justify-between min-h-[70px]"
+                          style={{ borderLeftColor: wonStage.color }}
+                        >
                           <div>
                             <span className="font-semibold text-xs text-green-800 dark:text-green-400 block truncate">
                               {wonStage.label}
@@ -581,7 +569,10 @@ export default function DashboardView({ onAddProspectClick, onNavigate }: Dashbo
                         </div>
 
                         {/* Lost Card */}
-                        <div className="p-2.5 bg-red-50/50 dark:bg-[#991b1b]/10 border-l-4 border-[#ef4444] dark:border-[#ef4444] rounded-r-lg shadow-sm flex flex-col justify-between min-h-[70px]">
+                        <div
+                          className="p-2.5 bg-red-50/50 dark:bg-[#991b1b]/10 border-l-4 rounded-r-lg shadow-sm flex flex-col justify-between min-h-[70px]"
+                          style={{ borderLeftColor: lostStage.color }}
+                        >
                           <div>
                             <span className="font-semibold text-xs text-red-800 dark:text-red-400 block truncate">
                               {lostStage.label}

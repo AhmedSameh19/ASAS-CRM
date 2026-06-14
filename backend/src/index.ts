@@ -5,6 +5,8 @@ import prospects from './routes/prospects'
 import activities from './routes/activities'
 import { documents, documentOperations } from './routes/documents'
 import analytics from './routes/analytics'
+import users from './routes/users'
+import stages from './routes/stages'
 import { getDb } from './db'
 import { authMiddleware } from './middleware/auth'
 
@@ -61,6 +63,8 @@ app.route('/api/prospects', prospects)
 app.route('/api/activities', activities)
 app.route('/api/analytics', analytics)
 app.route('/api/documents', documentOperations)
+app.route('/api/users', users)
+app.route('/api/workflow-stages', stages)
 
 // Special route for getting/posting activities under a prospect, mounted at root
 const nestedActivities = new Hono<{ Bindings: Bindings }>()

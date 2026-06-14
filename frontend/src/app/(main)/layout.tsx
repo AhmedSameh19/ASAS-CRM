@@ -4,16 +4,23 @@ import { useAuthStore } from '@/store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Users, LogOut, Loader2, KanbanSquare, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Loader2, KanbanSquare, BarChart3, Settings, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
 import { AsasLogo } from '@/components/AsasLogo';
+import { toast } from 'sonner';
+import { api } from '@/lib/api';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuthStore();
+  const { user, login, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+
+  // Password Reset State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -35,12 +42,106 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     router.push('/login');
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    try {
+      setResetLoading(true);
+      const res = await api.post('/auth/change-password', { newPassword });
+      toast.success('Password changed successfully');
+      login(res.user, res.token);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // Enforce password reset overlay
+  if (user.requires_password_change) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#F3F4F6] dark:bg-[#020817] p-4">
+        <div className="w-full max-w-md bg-white dark:bg-[#0b1120] border border-[#E5E7EB] dark:border-[#1e293b] rounded-2xl p-6 md:p-8 shadow-xl space-y-6 animate-in fade-in duration-200">
+          <div className="text-center space-y-2">
+            <div className="mx-auto w-12 h-12 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Lock className="h-6 w-6 animate-pulse" />
+            </div>
+            <h2 className="text-xl font-extrabold text-on-surface dark:text-white">Mandatory Password Reset</h2>
+            <p className="text-xs text-outline dark:text-gray-400 leading-relaxed">
+              As a security precaution, you must change your password before you can access your ASAS CRM workspace.
+            </p>
+          </div>
+
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="new-password">
+                New Password
+              </label>
+              <input
+                id="new-password"
+                type="password"
+                placeholder="Enter at least 6 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="confirm-password">
+                Confirm Password
+              </label>
+              <input
+                id="confirm-password"
+                type="password"
+                placeholder="Re-enter new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3 py-2 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-outline/70 transition-all"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={resetLoading}
+              className="w-full py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
+            >
+              {resetLoading ? 'Updating Password...' : 'Save New Password & Continue'}
+            </button>
+          </form>
+
+          <div className="border-t border-gray-100 dark:border-[#1e293b] pt-4 flex justify-center">
+            <button
+              onClick={handleLogout}
+              className="text-xs font-bold text-outline hover:text-on-surface dark:hover:text-white flex items-center gap-1.5 transition-colors"
+            >
+              <LogOut className="h-4 w-4" /> Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Prospects', href: '/prospects', icon: Users },
     { name: 'Pipeline', href: '/pipeline', icon: KanbanSquare },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ];
+
+  if (user.role === 'admin') {
+    navItems.push({ name: 'Settings', href: '/settings', icon: Settings });
+  }
 
   return (
     <div className="flex h-screen bg-[#F3F4F6] dark:bg-[#020817] overflow-hidden flex-row">
@@ -107,7 +208,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               {pathname === '/dashboard' ? 'Overview' :
                 pathname.startsWith('/prospects') ? 'Prospects Management' :
                   pathname === '/pipeline' ? 'Sales Pipeline' :
-                    pathname === '/analytics' ? 'Deep Analytics' : ''}
+                    pathname === '/analytics' ? 'Deep Analytics' :
+                      pathname.startsWith('/settings') ? 'System Settings' : ''}
             </span>
           </div>
           <div className="flex items-center gap-4">

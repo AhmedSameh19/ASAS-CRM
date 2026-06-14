@@ -15,9 +15,9 @@ analytics.get('/', async (c) => {
   const { date_range, industry } = c.req.query()
 
   // Database Isolation: Scoped base WHERE clause to the authenticated user
-  let whereClause = 'WHERE 1 = 1'
-  const params: any[] = []
-  let paramCount = 1
+  let whereClause = 'WHERE assigned_to = $1'
+  const params: any[] = [user.id]
+  let paramCount = 2
 
   if (industry && industry !== 'All') {
     whereClause += ` AND industry = $${paramCount++}`
@@ -35,18 +35,38 @@ analytics.get('/', async (c) => {
   }
 
   try {
+    // 0. Fetch dynamic stages
+    const stagesRes = await db.query('SELECT name, label, color, position, type FROM workflow_stages ORDER BY position ASC')
+    const stages = stagesRes.rows
+
+    const wonStageNames = stages.filter(s => s.type === 'won').map(s => s.name)
+    const lostStageNames = stages.filter(s => s.type === 'lost').map(s => s.name)
+
     // 1. Pipeline Funnel (Counts by status)
     const pipelineQuery = `
-      SELECT status as name, COUNT(*) as count 
+      SELECT status as name, COUNT(*)::integer as count 
       FROM prospects 
       ${whereClause} 
       GROUP BY status
     `
     const pipelineRes = await db.query(pipelineQuery, params)
+    const dbCounts = pipelineRes.rows
+
+    // Merge all stages to ensure zero-count stages are returned in correct order
+    const pipelineData = stages.map(stage => {
+      const match = dbCounts.find(r => r.name.toLowerCase() === stage.name.toLowerCase())
+      return {
+        name: stage.name,
+        label: stage.label,
+        color: stage.color,
+        type: stage.type,
+        count: match ? match.count : 0
+      }
+    })
 
     // 2. Industry Breakdown
     const industryQuery = `
-      SELECT COALESCE(industry, 'Unknown') as name, COUNT(*) as value
+      SELECT COALESCE(industry, 'Unknown') as name, COUNT(*)::integer as value
       FROM prospects
       ${whereClause}
       GROUP BY COALESCE(industry, 'Unknown')
@@ -54,31 +74,58 @@ analytics.get('/', async (c) => {
     const industryRes = await db.query(industryQuery, params)
 
     // 3. Key Metrics
-    const metricsQuery = `
-      SELECT 
-        COUNT(*) as total,
-        COUNT(*) FILTER (WHERE status NOT IN ('Won', 'Lost')) as active,
-        COUNT(*) FILTER (WHERE status = 'Won') as won,
-        COUNT(*) FILTER (WHERE status = 'Lost') as lost,
-        COALESCE(SUM(estimated_value) FILTER (WHERE status = 'Won'), 0) as won_value
-      FROM prospects
-      ${whereClause}
-    `
-    const metricsRes = await db.query(metricsQuery, params)
+    let wonValue = 0
+    if (wonStageNames.length > 0) {
+      const placeholders = wonStageNames.map((_, i) => `$${paramCount + i}`).join(', ')
+      const wonValueQuery = `
+        SELECT COALESCE(SUM(estimated_value), 0)::double precision as won_value 
+        FROM prospects 
+        ${whereClause} AND status IN (${placeholders})
+      `
+      const wonValueRes = await db.query(wonValueQuery, [...params, ...wonStageNames])
+      wonValue = wonValueRes.rows[0].won_value
+    }
+
+    const total = pipelineData.reduce((acc, s) => acc + s.count, 0)
+    const wonCount = pipelineData.filter(s => s.type === 'won').reduce((acc, s) => acc + s.count, 0)
+    const lostCount = pipelineData.filter(s => s.type === 'lost').reduce((acc, s) => acc + s.count, 0)
+    const activeCount = pipelineData.filter(s => s.type === 'active').reduce((acc, s) => acc + s.count, 0)
+
+    const metrics = {
+      total,
+      active: activeCount,
+      won: wonCount,
+      lost: lostCount,
+      won_value: wonValue
+    }
 
     // 4. Revenue Growth
-    const revenueQuery = `
-      SELECT TO_CHAR(created_at, 'Mon') as name, COALESCE(SUM(estimated_value), 0) as value
-      FROM prospects
-      ${whereClause} AND status = 'Won'
-      GROUP BY TO_CHAR(created_at, 'Mon'), EXTRACT(MONTH FROM created_at)
-      ORDER BY EXTRACT(MONTH FROM created_at)
-    `
-    const revenueRes = await db.query(revenueQuery, params)
+    let revenueQuery = ''
+    let revenueParams = [...params]
+    if (wonStageNames.length > 0) {
+      const placeholders = wonStageNames.map((_, i) => `$${paramCount + i}`).join(', ')
+      revenueQuery = `
+        SELECT TO_CHAR(created_at, 'Mon') as name, COALESCE(SUM(estimated_value), 0)::double precision as value
+        FROM prospects
+        ${whereClause} AND status IN (${placeholders})
+        GROUP BY TO_CHAR(created_at, 'Mon'), EXTRACT(MONTH FROM created_at)
+        ORDER BY EXTRACT(MONTH FROM created_at)
+      `
+      revenueParams.push(...wonStageNames)
+    } else {
+      revenueQuery = `
+        SELECT TO_CHAR(created_at, 'Mon') as name, COALESCE(SUM(estimated_value), 0)::double precision as value
+        FROM prospects
+        ${whereClause} AND status = 'Won'
+        GROUP BY TO_CHAR(created_at, 'Mon'), EXTRACT(MONTH FROM created_at)
+        ORDER BY EXTRACT(MONTH FROM created_at)
+      `
+    }
+    const revenueRes = await db.query(revenueQuery, revenueParams)
 
     // 5. Lead Sources
     const sourceQuery = `
-      SELECT COALESCE(source, 'Unknown') as name, COUNT(*) as value
+      SELECT COALESCE(source, 'Unknown') as name, COUNT(*)::integer as value
       FROM prospects
       ${whereClause}
       GROUP BY COALESCE(source, 'Unknown')
@@ -86,24 +133,43 @@ analytics.get('/', async (c) => {
     const sourceRes = await db.query(sourceQuery, params)
 
     // 6. Top Performers (Team wide leaderboard)
-    const topPerformersQuery = `
-      SELECT 
-        u.name,
-        SUBSTRING(u.name FROM 1 FOR 2) as initials,
-        COUNT(p.id) as deals,
-        COALESCE(SUM(p.estimated_value), 0) as value
-      FROM users u
-      LEFT JOIN prospects p ON u.id = p.assigned_to AND p.status = 'Won'
-      GROUP BY u.id
-      ORDER BY value DESC
-      LIMIT 3
-    `
-    const topPerformersRes = await db.query(topPerformersQuery)
+    let topPerformersQuery = ''
+    let topPerformersParams: any[] = []
+    if (wonStageNames.length > 0) {
+      const placeholders = wonStageNames.map((_, i) => `$${i + 1}`).join(', ')
+      topPerformersQuery = `
+        SELECT 
+          u.name,
+          SUBSTRING(u.name FROM 1 FOR 2) as initials,
+          COUNT(p.id)::integer as deals,
+          COALESCE(SUM(p.estimated_value), 0)::double precision as value
+        FROM users u
+        LEFT JOIN prospects p ON u.id = p.assigned_to AND p.status IN (${placeholders})
+        GROUP BY u.id, u.name
+        ORDER BY value DESC
+        LIMIT 3
+      `
+      topPerformersParams.push(...wonStageNames)
+    } else {
+      topPerformersQuery = `
+        SELECT 
+          u.name,
+          SUBSTRING(u.name FROM 1 FOR 2) as initials,
+          COUNT(p.id)::integer as deals,
+          COALESCE(SUM(p.estimated_value), 0)::double precision as value
+        FROM users u
+        LEFT JOIN prospects p ON u.id = p.assigned_to AND p.status = 'Won'
+        GROUP BY u.id, u.name
+        ORDER BY value DESC
+        LIMIT 3
+      `
+    }
+    const topPerformersRes = await db.query(topPerformersQuery, topPerformersParams)
 
     return c.json({
-      pipelineData: pipelineRes.rows,
+      pipelineData,
       industryData: industryRes.rows,
-      metrics: metricsRes.rows[0],
+      metrics,
       revenueGrowth: revenueRes.rows,
       leadSources: sourceRes.rows,
       topPerformers: topPerformersRes.rows

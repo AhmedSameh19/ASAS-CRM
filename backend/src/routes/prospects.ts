@@ -121,6 +121,13 @@ prospects.post('/', async (c) => {
       return c.json({ error: "This lead is already available", prospect: prospect.rows[0] }, 409)
     }
 
+    // Get default status if not provided
+    let initialStatus = status
+    if (!initialStatus) {
+      const defaultStageRes = await db.query('SELECT name FROM workflow_stages ORDER BY position ASC LIMIT 1')
+      initialStatus = defaultStageRes.rows[0]?.name || 'New Lead'
+    }
+
     // Database Isolation: Automatically assign new prospects to the authenticated user
     const query = `
       INSERT INTO prospects (
@@ -131,7 +138,7 @@ prospects.post('/', async (c) => {
     `
     const values = [
       company_name, contact_person, phone, email, industry, company_size,
-      source, status || 'New Lead', estimated_value, expected_close_date, priority || 'Medium', user.id, notes
+      source, initialStatus, estimated_value, expected_close_date, priority || 'Medium', user.id, notes
     ]
     const result = await db.query(query, values)
     return c.json({ prospect: result.rows[0] })

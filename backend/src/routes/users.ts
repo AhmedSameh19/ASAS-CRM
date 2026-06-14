@@ -1,0 +1,125 @@
+import { Hono } from 'hono'
+import { getDb } from '../db'
+import { authMiddleware } from '../middleware/auth'
+import * as bcrypt from 'bcryptjs'
+
+type Bindings = {
+  DATABASE_URL: string
+}
+
+const users = new Hono<{ Bindings: Bindings }>()
+
+users.use('*', authMiddleware)
+
+// Helper: check if authenticated user is admin
+async function checkAdmin(c: any) {
+  const userPayload = c.get('jwtPayload') as any
+  if (!userPayload) return false
+  
+  const db = getDb(c.env.DATABASE_URL)
+  try {
+    const res = await db.query('SELECT role FROM users WHERE id = $1', [userPayload.id])
+    const user = res.rows[0]
+    return user && user.role === 'admin'
+  } catch (err) {
+    console.error('Check admin error:', err)
+    return false
+  }
+}
+
+// GET /api/users - List all users
+users.get('/', async (c) => {
+  const isAdmin = await checkAdmin(c)
+  if (!isAdmin) {
+    return c.json({ error: 'Forbidden: Admins only' }, 403)
+  }
+
+  const db = getDb(c.env.DATABASE_URL)
+  try {
+    const res = await db.query(
+      'SELECT id, email, name, role, requires_password_change, created_at FROM users ORDER BY created_at DESC'
+    )
+    return c.json({ users: res.rows })
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// POST /api/users - Create a new user with random password
+users.post('/', async (c) => {
+  const isAdmin = await checkAdmin(c)
+  if (!isAdmin) {
+    return c.json({ error: 'Forbidden: Admins only' }, 403)
+  }
+
+  const { email, name, role = 'user' } = await c.req.json()
+  if (!email || !name) {
+    return c.json({ error: 'Email and Name are required' }, 400)
+  }
+
+  // Generate random password
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+  let tempPassword = ''
+  for (let i = 0; i < 12; i++) {
+    tempPassword += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+
+  const db = getDb(c.env.DATABASE_URL)
+  try {
+    // Check if user already exists
+    const checkUser = await db.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email])
+    if (checkUser.rowCount > 0) {
+      return c.json({ error: 'User with this email already exists' }, 409)
+    }
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10)
+    const res = await db.query(
+      `INSERT INTO users (email, password, name, role, requires_password_change) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, email, name, role, requires_password_change, created_at`,
+      [email.toLowerCase(), hashedPassword, name, role, true]
+    )
+
+    return c.json({
+      message: 'User created successfully',
+      user: res.rows[0],
+      tempPassword // Return plain text password for admin to copy
+    }, 201)
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// DELETE /api/users/:id - Delete a user
+users.delete('/:id', async (c) => {
+  const isAdmin = await checkAdmin(c)
+  if (!isAdmin) {
+    return c.json({ error: 'Forbidden: Admins only' }, 403)
+  }
+
+  const targetId = parseInt(c.req.param('id'), 10)
+  const userPayload = c.get('jwtPayload') as any
+
+  if (targetId === userPayload.id) {
+    return c.json({ error: 'Cannot delete yourself' }, 400)
+  }
+
+  const db = getDb(c.env.DATABASE_URL)
+  try {
+    // Reassign prospects to NULL or handle foreign key relations
+    await db.query('UPDATE prospects SET assigned_to = NULL WHERE assigned_to = $1', [targetId])
+    await db.query('UPDATE activities SET created_by = NULL WHERE created_by = $1', [targetId])
+    await db.query('UPDATE documents SET uploaded_by = NULL WHERE uploaded_by = $1', [targetId])
+
+    const deleteRes = await db.query('DELETE FROM users WHERE id = $1 RETURNING id, email', [targetId])
+    if (deleteRes.rowCount === 0) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+
+    return c.json({ message: 'User deleted successfully', deletedUser: deleteRes.rows[0] })
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+export default users
