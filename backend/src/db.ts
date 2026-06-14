@@ -1,27 +1,25 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 
-let cachedDb: any = null;
+export interface Db {
+  query: (text: string, params?: any[]) => Promise<{ rows: any[]; rowCount: number }>;
+}
+
+// One neon SQL client instance per worker isolate lifetime.
+// Because Cloudflare Workers persist global state between requests within
+// the same isolate, this is effectively a true singleton for the worker's life.
+let cachedSql: NeonQueryFunction<false, false> | null = null;
 let cachedConnectionString = '';
 
-// In Cloudflare Workers, we use Neon's HTTP client 'neon' for stateless queries.
-// We cache the db instance globally so we reuse the connection client across requests,
-// avoiding setup overhead while preventing WebSocket shared-state issues.
-export const getDb = (connectionString: string) => {
-  if (cachedDb && cachedConnectionString === connectionString) {
-    return cachedDb;
+export function getDb(connectionString: string): Db {
+  if (!cachedSql || cachedConnectionString !== connectionString) {
+    cachedSql = neon(connectionString);
+    cachedConnectionString = connectionString;
   }
 
-  const sql = neon(connectionString);
-  cachedConnectionString = connectionString;
-  cachedDb = {
+  return {
     query: async (text: string, params?: any[]) => {
-      // For conventional function calls with value placeholders ($1, $2, etc.), we use sql.query
-      const rows = await sql.query(text, params);
-      return {
-        rows,
-        rowCount: rows.length
-      };
-    }
+      const rows = await cachedSql!.query(text, params);
+      return { rows, rowCount: rows.length };
+    },
   };
-  return cachedDb;
-};
+}

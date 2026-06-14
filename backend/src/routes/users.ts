@@ -1,13 +1,12 @@
 import { Hono } from 'hono'
-import { getDb } from '../db'
-import { authMiddleware } from '../middleware/auth'
 import * as bcrypt from 'bcryptjs'
+import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DATABASE_URL: string
 }
 
-const users = new Hono<{ Bindings: Bindings }>()
+const users = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 
 users.use('*', authMiddleware)
 
@@ -16,7 +15,7 @@ async function checkAdmin(c: any) {
   const userPayload = c.get('jwtPayload') as any
   if (!userPayload) return false
   
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     const res = await db.query('SELECT role FROM users WHERE id = $1', [userPayload.id])
     const user = res.rows[0]
@@ -34,7 +33,7 @@ users.get('/', async (c) => {
     return c.json({ error: 'Forbidden: Admins only' }, 403)
   }
 
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     const res = await db.query(
       'SELECT id, email, name, role, requires_password_change, temp_password, created_at FROM users ORDER BY created_at DESC'
@@ -64,7 +63,7 @@ users.post('/', async (c) => {
     tempPassword += chars.charAt(Math.floor(Math.random() * chars.length))
   }
 
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     // Check if user already exists
     const checkUser = await db.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email])
@@ -90,6 +89,63 @@ users.post('/', async (c) => {
   }
 })
 
+// PUT /api/users/profile - Update own profile and/or change password
+users.put('/profile', async (c) => {
+  const userPayload = c.get('jwtPayload') as any
+  if (!userPayload) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const userId = userPayload.id
+  const { name, currentPassword, newPassword } = await c.req.json()
+
+  if (!name) {
+    return c.json({ error: 'Name is required' }, 400)
+  }
+
+  const db = c.get('db')
+  try {
+    const userRes = await db.query('SELECT password, role FROM users WHERE id = $1', [userId])
+    const user = userRes.rows[0]
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+
+    let hashedPassword = user.password
+    if (newPassword) {
+      if (!currentPassword) {
+        return c.json({ error: 'Current password is required to set a new password' }, 400)
+      }
+      
+      const isMatch = await bcrypt.compare(currentPassword, user.password)
+      if (!isMatch) {
+        return c.json({ error: 'Incorrect current password' }, 400)
+      }
+
+      if (newPassword.length < 6) {
+        return c.json({ error: 'New password must be at least 6 characters long' }, 400)
+      }
+
+      hashedPassword = await bcrypt.hash(newPassword, 10)
+    }
+
+    const updateRes = await db.query(
+      `UPDATE users 
+       SET name = $1, password = $2
+       WHERE id = $3 
+       RETURNING id, email, name, role, created_at`,
+      [name, hashedPassword, userId]
+    )
+
+    return c.json({
+      message: 'Profile updated successfully',
+      user: updateRes.rows[0]
+    })
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
 // DELETE /api/users/:id - Delete a user
 users.delete('/:id', async (c) => {
   const isAdmin = await checkAdmin(c)
@@ -104,7 +160,7 @@ users.delete('/:id', async (c) => {
     return c.json({ error: 'Cannot delete yourself' }, 400)
   }
 
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     // Reassign prospects to NULL or handle foreign key relations
     await db.query('UPDATE prospects SET assigned_to = NULL WHERE assigned_to = $1', [targetId])

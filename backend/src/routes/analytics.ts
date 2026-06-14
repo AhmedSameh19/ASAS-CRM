@@ -1,16 +1,15 @@
 import { Hono } from 'hono'
-import { getDb } from '../db'
 import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DATABASE_URL: string
 }
 
-const analytics = new Hono<{ Bindings: Bindings }>()
+const analytics = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 analytics.use('*', authMiddleware)
 
 analytics.get('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const { date_range, industry } = c.req.query()
 
@@ -39,8 +38,8 @@ analytics.get('/', async (c) => {
     const stagesRes = await db.query('SELECT name, label, color, position, type FROM workflow_stages ORDER BY position ASC')
     const stages = stagesRes.rows
 
-    const wonStageNames = stages.filter(s => s.type === 'won').map(s => s.name)
-    const lostStageNames = stages.filter(s => s.type === 'lost').map(s => s.name)
+    const wonStageNames = stages.filter((s: any) => s.type === 'won').map((s: any) => s.name)
+    const lostStageNames = stages.filter((s: any) => s.type === 'lost').map((s: any) => s.name)
 
     // 1. Pipeline Funnel (Counts by status)
     const pipelineQuery = `
@@ -53,8 +52,8 @@ analytics.get('/', async (c) => {
     const dbCounts = pipelineRes.rows
 
     // Merge all stages to ensure zero-count stages are returned in correct order
-    const pipelineData = stages.map(stage => {
-      const match = dbCounts.find(r => r.name.toLowerCase() === stage.name.toLowerCase())
+    const pipelineData = stages.map((stage: any) => {
+      const match = dbCounts.find((r: any) => r.name.toLowerCase() === stage.name.toLowerCase())
       return {
         name: stage.name,
         label: stage.label,
@@ -76,7 +75,7 @@ analytics.get('/', async (c) => {
     // 3. Key Metrics
     let wonValue = 0
     if (wonStageNames.length > 0) {
-      const placeholders = wonStageNames.map((_, i) => `$${paramCount + i}`).join(', ')
+      const placeholders = wonStageNames.map((_: any, i: number) => `$${paramCount + i}`).join(', ')
       const wonValueQuery = `
         SELECT COALESCE(SUM(estimated_value), 0)::double precision as won_value 
         FROM prospects 
@@ -86,10 +85,10 @@ analytics.get('/', async (c) => {
       wonValue = wonValueRes.rows[0].won_value
     }
 
-    const total = pipelineData.reduce((acc, s) => acc + s.count, 0)
-    const wonCount = pipelineData.filter(s => s.type === 'won').reduce((acc, s) => acc + s.count, 0)
-    const lostCount = pipelineData.filter(s => s.type === 'lost').reduce((acc, s) => acc + s.count, 0)
-    const activeCount = pipelineData.filter(s => s.type === 'active').reduce((acc, s) => acc + s.count, 0)
+    const total = pipelineData.reduce((acc: number, s: any) => acc + s.count, 0)
+    const wonCount = pipelineData.filter((s: any) => s.type === 'won').reduce((acc: number, s: any) => acc + s.count, 0)
+    const lostCount = pipelineData.filter((s: any) => s.type === 'lost').reduce((acc: number, s: any) => acc + s.count, 0)
+    const activeCount = pipelineData.filter((s: any) => s.type === 'active').reduce((acc: number, s: any) => acc + s.count, 0)
 
     const metrics = {
       total,
@@ -103,7 +102,7 @@ analytics.get('/', async (c) => {
     let revenueQuery = ''
     let revenueParams = [...params]
     if (wonStageNames.length > 0) {
-      const placeholders = wonStageNames.map((_, i) => `$${paramCount + i}`).join(', ')
+      const placeholders = wonStageNames.map((_: any, i: number) => `$${paramCount + i}`).join(', ')
       revenueQuery = `
         SELECT TO_CHAR(created_at, 'Mon') as name, COALESCE(SUM(estimated_value), 0)::double precision as value
         FROM prospects
@@ -136,7 +135,7 @@ analytics.get('/', async (c) => {
     let topPerformersQuery = ''
     let topPerformersParams: any[] = []
     if (wonStageNames.length > 0) {
-      const placeholders = wonStageNames.map((_, i) => `$${i + 1}`).join(', ')
+      const placeholders = wonStageNames.map((_: any, i: number) => `$${i + 1}`).join(', ')
       topPerformersQuery = `
         SELECT 
           u.name,

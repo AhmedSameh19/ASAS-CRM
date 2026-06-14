@@ -1,5 +1,4 @@
 import { Hono } from 'hono'
-import { getDb } from '../db'
 import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
@@ -8,13 +7,12 @@ type Bindings = {
   R2_PUBLIC_URL: string
 }
 
-const documents = new Hono<{ Bindings: Bindings }>()
+const documents = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 documents.use('*', authMiddleware)
 
 // POST /api/prospects/:id/documents
-// Since this is mounted under /api/prospects/:id/documents in index.ts, the param is accessed via c.req.param('id')
 documents.post('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const prospect_id = c.req.param('id')
   const user = c.get('jwtPayload') as any
 
@@ -62,7 +60,7 @@ documents.post('/', async (c) => {
 
 // GET /api/prospects/:id/documents
 documents.get('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const prospect_id = c.req.param('id')
 
   try {
@@ -74,11 +72,11 @@ documents.get('/', async (c) => {
 })
 
 // The download and delete endpoints don't need prospect_id in the URL if they are mounted at /api/documents
-const documentOperations = new Hono<{ Bindings: Bindings }>()
+const documentOperations = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 documentOperations.use('*', authMiddleware)
 
 documentOperations.get('/:id/download', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const id = c.req.param('id')
 
   try {
@@ -87,12 +85,9 @@ documentOperations.get('/:id/download', async (c) => {
 
     const doc = result.rows[0]
     
-    // Extract the token from the authorization header of this authenticated request
     const authHeader = c.req.header('Authorization')
     const token = authHeader ? authHeader.replace(/bearer\s+/i, '') : ''
 
-    // Dynamically build the download proxy URL using the server origin
-    // This allows downloads to work seamlessly in local development with mock R2
     const origin = new URL(c.req.url).origin
     const fileUrl = `${origin}/api/documents/${id}/file${token ? `?token=${encodeURIComponent(token)}` : ''}`
     return c.json({ url: fileUrl, file_name: doc.file_name })
@@ -102,7 +97,7 @@ documentOperations.get('/:id/download', async (c) => {
 })
 
 documentOperations.get('/:id/file', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const id = c.req.param('id')
 
   try {
@@ -129,7 +124,7 @@ documentOperations.get('/:id/file', async (c) => {
 })
 
 documentOperations.delete('/:id', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const id = c.req.param('id')
 
   try {

@@ -7,8 +7,8 @@ import { documents, documentOperations } from './routes/documents'
 import analytics from './routes/analytics'
 import users from './routes/users'
 import stages from './routes/stages'
-import { getDb } from './db'
 import { authMiddleware } from './middleware/auth'
+import { dbMiddleware } from './middleware/db'
 
 type Bindings = {
   DATABASE_URL: string
@@ -17,7 +17,9 @@ type Bindings = {
   BUCKET?: R2Bucket
 }
 
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
+
+// ── Global middleware ──────────────────────────────────────────────────────────
 
 app.use(
   '*',
@@ -31,12 +33,17 @@ app.use(
   })
 )
 
+// Initialize DB once for the entire request chain
+app.use('*', dbMiddleware)
+
+// ── Routes ────────────────────────────────────────────────────────────────────
+
 app.get('/', (c) => {
   return c.json({ message: 'ASAS CRM API is running' })
 })
 
 app.get('/health', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const startTime = Date.now()
   try {
     await db.query('SELECT 1')
@@ -66,14 +73,17 @@ app.route('/api/documents', documentOperations)
 app.route('/api/users', users)
 app.route('/api/workflow-stages', stages)
 
-// Special route for getting/posting activities under a prospect, mounted at root
-const nestedActivities = new Hono<{ Bindings: Bindings }>()
+// Nested: GET /:id/activities  +  /:id/documents
+const nestedActivities = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 nestedActivities.use('*', authMiddleware)
 nestedActivities.get('/:id/activities', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const id = c.req.param('id')
   try {
-    const activitiesRes = await db.query('SELECT * FROM activities WHERE prospect_id = $1 ORDER BY activity_date DESC', [id])
+    const activitiesRes = await db.query(
+      'SELECT * FROM activities WHERE prospect_id = $1 ORDER BY activity_date DESC',
+      [id]
+    )
     return c.json({ activities: activitiesRes.rows })
   } catch (error: any) {
     return c.json({ error: error.message }, 500)

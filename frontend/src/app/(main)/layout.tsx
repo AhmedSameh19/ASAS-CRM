@@ -137,6 +137,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { name: 'Prospects', href: '/prospects', icon: Users },
     { name: 'Pipeline', href: '/pipeline', icon: KanbanSquare },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    // { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   if (user.role === 'admin') {

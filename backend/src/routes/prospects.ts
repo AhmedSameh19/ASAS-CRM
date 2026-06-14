@@ -1,18 +1,17 @@
 import { Hono } from 'hono'
-import { getDb } from '../db'
 import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DATABASE_URL: string
 }
 
-const prospects = new Hono<{ Bindings: Bindings }>()
+const prospects = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 
 prospects.use('*', authMiddleware)
 
 // GET /api/prospects
 prospects.get('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const { status, industry, search, sort = 'created_at', order = 'desc' } = c.req.query()
 
@@ -85,7 +84,7 @@ prospects.get('/', async (c) => {
 
 // GET /api/prospects/:id
 prospects.get('/:id', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
 
@@ -109,7 +108,7 @@ prospects.get('/:id', async (c) => {
 
 // POST /api/prospects
 prospects.post('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const body = await c.req.json()
   const { company_name, contact_person, phone, email, industry, company_size, source, status, estimated_value, expected_close_date, priority, notes } = body
@@ -149,7 +148,7 @@ prospects.post('/', async (c) => {
 
 // PUT /api/prospects/:id
 prospects.put('/:id', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
   const body = await c.req.json()
@@ -178,7 +177,7 @@ prospects.put('/:id', async (c) => {
 
 // DELETE /api/prospects/:id
 prospects.delete('/:id', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const id = c.req.param('id')
 

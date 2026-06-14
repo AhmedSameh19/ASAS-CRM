@@ -60,7 +60,7 @@ const PRESET_COLORS = [
 
 export default function SettingsView() {
   const { user: currentUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'users' | 'stages'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'stages' | 'profile'>('profile');
   
   // Users state
   const [users, setUsers] = useState<User[]>([]);
@@ -88,7 +88,21 @@ export default function SettingsView() {
   const [placementType, setPlacementType] = useState<'current' | 'first' | 'last' | 'after'>('last');
   const [placementAfterStageId, setPlacementAfterStageId] = useState<number | ''>('');
 
+  // Profile Form state
+  const [profileName, setProfileName] = useState(currentUser?.name || '');
+  const [profileCurrentPassword, setProfileCurrentPassword] = useState('');
+  const [profileNewPassword, setProfileNewPassword] = useState('');
+  const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
   const reorderTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setActiveTab(currentUser.role === 'admin' ? 'users' : 'profile');
+      setProfileName(currentUser.name);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     return () => {
@@ -275,6 +289,48 @@ export default function SettingsView() {
     }
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileName) {
+      toast.error('Name is required');
+      return;
+    }
+
+    if (profileNewPassword && profileNewPassword !== profileConfirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (profileNewPassword && !profileCurrentPassword) {
+      toast.error('Current password is required to change password');
+      return;
+    }
+
+    try {
+      setProfileLoading(true);
+      const data = await api.put('/users/profile', {
+        name: profileName,
+        currentPassword: profileCurrentPassword || undefined,
+        newPassword: profileNewPassword || undefined
+      });
+      
+      toast.success('Profile updated successfully');
+      
+      // Update auth store with new user info
+      localStorage.setItem('user', JSON.stringify(data.user));
+      useAuthStore.setState({ user: data.user });
+      
+      // Clear password fields
+      setProfileCurrentPassword('');
+      setProfileNewPassword('');
+      setProfileConfirmPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   // Delete stage handler
   const handleDeleteStage = (stageId: number, stageName: string) => {
     if (stages.length <= 1) {
@@ -341,55 +397,61 @@ export default function SettingsView() {
     toast.success('Copied to clipboard');
   };
 
-  if (currentUser?.role !== 'admin') {
-    return (
-      <div className="flex flex-col items-center justify-center h-[60vh] max-w-md mx-auto text-center space-y-4">
-        <AlertCircle className="h-16 w-16 text-destructive animate-bounce" />
-        <h2 className="text-xl font-extrabold text-on-surface dark:text-white">Access Denied</h2>
-        <p className="text-sm text-outline dark:text-gray-400">
-          Only administrators can access this system management workspace setting panel. Please contact the administrator if you believe this is a mistake.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-lg max-w-[1200px] mx-auto pb-12">
       {/* Title */}
       <div>
         <h1 className="font-headline-lg text-headline-lg text-on-surface tracking-tight dark:text-white flex items-center gap-2">
-          <Settings className="h-7 w-7 text-primary dark:text-[#3b82f6]" /> System Settings
+          <Settings className="h-7 w-7 text-primary dark:text-[#3b82f6]" /> Settings
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant dark:text-gray-400 mt-1">
-          Configure administrative settings, manage user accounts, and customize your CRM sales pipeline.
+          {currentUser?.role === 'admin' 
+            ? 'Configure administrative settings, manage user accounts, and customize your CRM sales pipeline.'
+            : 'Manage your profile details and security configurations.'}
         </p>
       </div>
 
       {/* Tabs Selector */}
       <div className="flex border-b border-outline-variant dark:border-[#1e293b]">
+        {currentUser?.role === 'admin' && (
+          <>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={cn(
+                'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
+                activeTab === 'users'
+                  ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
+                  : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
+              )}
+            >
+              <Users className="h-4.5 w-4.5" />
+              <span>User Accounts</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('stages')}
+              className={cn(
+                'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
+                activeTab === 'stages'
+                  ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
+                  : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
+              )}
+            >
+              <Sliders className="h-4.5 w-4.5" />
+              <span>Workflow Stages</span>
+            </button>
+          </>
+        )}
         <button
-          onClick={() => setActiveTab('users')}
+          onClick={() => setActiveTab('profile')}
           className={cn(
             'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
-            activeTab === 'users'
+            activeTab === 'profile'
               ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
               : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
           )}
         >
-          <Users className="h-4.5 w-4.5" />
-          <span>User Accounts</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('stages')}
-          className={cn(
-            'px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-all',
-            activeTab === 'stages'
-              ? 'border-primary text-primary dark:border-[#3b82f6] dark:text-[#3b82f6]'
-              : 'border-transparent text-outline hover:text-on-surface dark:hover:text-white'
-          )}
-        >
-          <Sliders className="h-4.5 w-4.5" />
-          <span>Workflow Stages</span>
+          <Lock className="h-4.5 w-4.5" />
+          <span>My Profile & Password</span>
         </button>
       </div>
 
@@ -966,6 +1028,110 @@ export default function SettingsView() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Tab Contents: Profile */}
+      {activeTab === 'profile' && (
+        <div className="w-full bg-white dark:bg-[#0b1120] rounded-2xl border border-outline-variant dark:border-[#1e293b] overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-outline-variant dark:border-[#1e293b] bg-surface-container-low dark:bg-gray-900/40">
+            <h2 className="text-base font-bold text-on-surface dark:text-white">Profile Information</h2>
+            <p className="text-[11px] text-outline mt-0.5">Update your display name and update your account login password.</p>
+          </div>
+
+          <form onSubmit={handleUpdateProfile} className="p-6 space-y-5">
+            {/* Email (Read-only) */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-outline tracking-wider">
+                Email Address (Primary Identity)
+              </label>
+              <input
+                type="email"
+                value={currentUser?.email || ''}
+                disabled
+                className="w-full bg-[#f1f3ff]/50 dark:bg-[#111827]/40 border border-outline-variant/60 dark:border-[#334155]/40 rounded-xl px-3.5 py-2.5 text-sm text-outline dark:text-gray-400 cursor-not-allowed focus:outline-none"
+              />
+            </div>
+
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="profile-name">
+                Full Name
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                required
+                className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              />
+            </div>
+
+            {/* Password Section */}
+            <div className="pt-4 border-t border-outline-variant dark:border-[#1e293b] space-y-4">
+              <div>
+                <h3 className="text-xs font-extrabold uppercase tracking-wide text-primary dark:text-[#3b82f6]">Change Password</h3>
+                <p className="text-[10px] text-outline mt-0.5">Leave blank if you do not want to change your password.</p>
+              </div>
+
+              {/* Current Password */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="profile-curr-pass">
+                  Current Password
+                </label>
+                <input
+                  id="profile-curr-pass"
+                  type="password"
+                  placeholder="Enter current password to authorize changes"
+                  value={profileCurrentPassword}
+                  onChange={(e) => setProfileCurrentPassword(e.target.value)}
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-outline/50"
+                />
+              </div>
+
+              {/* New Password */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="profile-new-pass">
+                  New Password
+                </label>
+                <input
+                  id="profile-new-pass"
+                  type="password"
+                  placeholder="At least 6 characters"
+                  value={profileNewPassword}
+                  onChange={(e) => setProfileNewPassword(e.target.value)}
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-outline/50"
+                />
+              </div>
+
+              {/* Confirm New Password */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-bold text-outline tracking-wider" htmlFor="profile-conf-pass">
+                  Confirm New Password
+                </label>
+                <input
+                  id="profile-conf-pass"
+                  type="password"
+                  placeholder="Re-enter new password"
+                  value={profileConfirmPassword}
+                  onChange={(e) => setProfileConfirmPassword(e.target.value)}
+                  className="w-full bg-[#f9f9ff] dark:bg-[#1e293b] border border-outline-variant dark:border-[#334155] rounded-xl px-3.5 py-2.5 text-sm text-on-surface dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-outline/50"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-4 border-t border-outline-variant dark:border-[#1e293b] flex justify-end">
+              <button
+                type="submit"
+                disabled={profileLoading}
+                className="px-5 py-2.5 bg-[#00236f] hover:bg-[#1e3a8a] text-white font-bold rounded-xl text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50"
+              >
+                {profileLoading ? 'Saving changes...' : 'Save Settings'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -1,19 +1,18 @@
 import { Hono } from 'hono'
-import { getDb } from '../db'
 import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DATABASE_URL: string
 }
 
-const activities = new Hono<{ Bindings: Bindings }>()
+const activities = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 
 activities.use('*', authMiddleware)
 
 // GET /api/activities
 // Database Isolation: Returns activities associated with prospects that are owned by the authenticated user
 activities.get('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const user = c.get('jwtPayload') as any
   const { page, limit } = c.req.query()
   const pageNum = Math.max(1, Number(page) || 1)
@@ -53,7 +52,7 @@ activities.get('/', async (c) => {
 
 // POST /api/activities
 activities.post('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const body = await c.req.json()
   const { prospect_id, activity_type, activity_date, duration, notes, outcome, next_steps } = body
   const user = c.get('jwtPayload') as any // From authMiddleware
@@ -83,7 +82,7 @@ activities.post('/', async (c) => {
 
 // PUT /api/activities/:id
 activities.put('/:id', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const id = c.req.param('id')
   const body = await c.req.json()
   const user = c.get('jwtPayload') as any
@@ -118,7 +117,7 @@ activities.put('/:id', async (c) => {
 
 // DELETE /api/activities/:id
 activities.delete('/:id', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   const id = c.req.param('id')
   const user = c.get('jwtPayload') as any
 

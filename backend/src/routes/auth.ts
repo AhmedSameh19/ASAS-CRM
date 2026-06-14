@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { sign } from 'hono/jwt'
-import { getDb } from '../db'
 import * as bcrypt from 'bcryptjs'
 import { authMiddleware } from '../middleware/auth'
 
@@ -9,45 +8,30 @@ type Bindings = {
   JWT_SECRET: string
 }
 
-const auth = new Hono<{ Bindings: Bindings }>()
 
-// Hardcoded users for fallback/seed
-const hardcodedUsers = [
-  { email: 'AhmedHany@asas.com', password: 'Admin123', name: 'Ahmed Hany', role: 'user' },
-  { email: 'AhmedSakr@asas.com', password: 'Admin123', name: 'Ahmed Sakr', role: 'admin' }
-]
+
+const auth = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 
 auth.post('/login', async (c) => {
   const { email, password } = await c.req.json()
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
 
   try {
     const result = await db.query('SELECT * FROM users WHERE Lower(email) = Lower($1)', [email])
-    let user = result.rows[0]
+    const user = result.rows[0]
 
-    // Fallback: If no users exist, check if it's one of the hardcoded users and seed them
+    // 1. Check if the user exists
     if (!user) {
-      const hcUser = hardcodedUsers.find(u => u.email.toLowerCase() === email.toLowerCase())
-      if (hcUser && hcUser.password === password) {
-        // Hash password and insert
-        const hashed = await bcrypt.hash(hcUser.password, 10)
-        const insertRes = await db.query(
-          'INSERT INTO users (email, password, name, role, requires_password_change) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [hcUser.email, hashed, hcUser.name, hcUser.role, false]
-        )
-        user = insertRes.rows[0]
-      } else {
-        return c.json({ error: 'Invalid credentials' }, 401)
-      }
-    } else {
-      // Verify password
-      const isValid = await bcrypt.compare(password, user.password)
-      if (!isValid) {
-        return c.json({ error: 'Invalid credentials' }, 401)
-      }
+      return c.json({ error: 'Invalid credentials' }, 401)
     }
 
-    // Generate JWT
+    // 2. Verify the password
+    const isValid = await bcrypt.compare(password, user.password)
+    if (!isValid) {
+      return c.json({ error: 'Invalid credentials' }, 401)
+    }
+
+    // 3. Generate JWT
     const payload = {
       id: user.id,
       email: user.email,
@@ -58,11 +42,12 @@ auth.post('/login', async (c) => {
     }
     const token = await sign(payload, c.env.JWT_SECRET)
 
+    // 4. Return successful response
     return c.json({
       token,
-      user: { 
-        id: user.id, 
-        email: user.email, 
+      user: {
+        id: user.id,
+        email: user.email,
         name: user.name,
         role: user.role,
         requires_password_change: user.requires_password_change
@@ -79,7 +64,7 @@ auth.get('/me', authMiddleware, async (c) => {
   if (!payload) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     const result = await db.query(
       'SELECT id, email, name, role, requires_password_change FROM users WHERE id = $1',
@@ -104,7 +89,7 @@ auth.get('/me', authMiddleware, async (c) => {
 auth.post('/change-password', authMiddleware, async (c) => {
   const { newPassword } = await c.req.json()
   const userPayload = c.get('jwtPayload') as any
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
 
   if (!newPassword || newPassword.length < 6) {
     return c.json({ error: 'Password must be at least 6 characters long' }, 400)
@@ -116,7 +101,7 @@ auth.post('/change-password', authMiddleware, async (c) => {
       'UPDATE users SET password = $1, requires_password_change = false, temp_password = NULL WHERE id = $2',
       [hashedPassword, userPayload.id]
     )
-    
+
     // Retrieve the updated user
     const result = await db.query(
       'SELECT id, email, name, role, requires_password_change FROM users WHERE id = $1',
@@ -152,4 +137,3 @@ auth.post('/change-password', authMiddleware, async (c) => {
 })
 
 export default auth
-

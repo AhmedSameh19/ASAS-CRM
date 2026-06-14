@@ -1,12 +1,11 @@
 import { Hono } from 'hono'
-import { getDb } from '../db'
 import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DATABASE_URL: string
 }
 
-const stages = new Hono<{ Bindings: Bindings }>()
+const stages = new Hono<{ Bindings: Bindings; Variables: { db: any; jwtPayload: any } }>()
 
 stages.use('*', authMiddleware)
 
@@ -15,7 +14,7 @@ async function checkAdmin(c: any) {
   const userPayload = c.get('jwtPayload') as any
   if (!userPayload) return false
   
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     const res = await db.query('SELECT role FROM users WHERE id = $1', [userPayload.id])
     const user = res.rows[0]
@@ -28,7 +27,7 @@ async function checkAdmin(c: any) {
 
 // GET /api/workflow-stages - List all stages
 stages.get('/', async (c) => {
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     const res = await db.query('SELECT * FROM workflow_stages ORDER BY position ASC')
     return c.json({ stages: res.rows })
@@ -49,7 +48,7 @@ stages.post('/', async (c) => {
     return c.json({ error: 'Name and Label are required' }, 400)
   }
 
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     // Check if name already exists
     const checkStage = await db.query('SELECT id FROM workflow_stages WHERE LOWER(name) = LOWER($1)', [name])
@@ -86,7 +85,7 @@ stages.put('/reorder', async (c) => {
     return c.json({ error: 'orders must be an array of { id, position }' }, 400)
   }
 
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     for (const item of orders) {
       await db.query('UPDATE workflow_stages SET position = $1 WHERE id = $2', [item.position, item.id])
@@ -110,7 +109,7 @@ stages.put('/:id', async (c) => {
     return c.json({ error: 'Name and Label are required' }, 400)
   }
 
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
   try {
     // 1. Get original stage details
     const origRes = await db.query('SELECT name FROM workflow_stages WHERE id = $1', [id])
@@ -155,7 +154,7 @@ stages.delete('/:id', async (c) => {
   }
 
   const id = parseInt(c.req.param('id'), 10)
-  const db = getDb(c.env.DATABASE_URL)
+  const db = c.get('db')
 
   try {
     // 1. Get the stage name being deleted
@@ -179,8 +178,6 @@ stages.delete('/:id', async (c) => {
       console.log(`Migrating prospects from deleted stage "${deletedName}" to "${fallbackStage.name}"...`)
       await db.query('UPDATE prospects SET status = $1 WHERE status = $2', [fallbackStage.name, deletedName])
     } else {
-      // If deleting the last stage, we can't migrate, but usually a CRM must have at least one stage.
-      // We can fail the deletion if it's the last stage to maintain sanity.
       const countRes = await db.query('SELECT COUNT(*) FROM workflow_stages')
       const count = parseInt(countRes.rows[0].count, 10)
       if (count <= 1) {
